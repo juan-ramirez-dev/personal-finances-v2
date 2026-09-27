@@ -206,3 +206,9 @@
     width: auto;
   }
 }
+
+.error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}

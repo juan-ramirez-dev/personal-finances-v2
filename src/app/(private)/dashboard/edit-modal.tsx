@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import type { FinanceData } from '@/lib/finance/types'
@@ -55,22 +55,29 @@ function EditForm({
   const [categories, setCategoriesDraft] = useState(data.categories)
   const [profile, setProfileDraft] = useState(data.profile)
   const [investment, setInvestmentDraft] = useState(data.investment)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, startSaving] = useTransition()
 
-  const save = (e: React.FormEvent) => {
-    e.preventDefault()
+  const persist = async () => {
     if (edit === 'fixed') {
-      setFixed(
+      return setFixed(
         fixed.filter(f => f.isInvestment || (f.name.trim() && f.amount > 0)),
       )
     }
     if (edit === 'categories') {
-      setCategories(categories.filter(c => c.name.trim()))
+      return setCategories(categories.filter(c => c.name.trim()))
     }
-    if (edit === 'profile') {
-      setProfile(profile)
-      setInvestment(investment)
-    }
-    onClose()
+    return (await setProfile(profile)) ?? setInvestment(investment)
+  }
+
+  const save = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (saving) return
+    startSaving(async () => {
+      const failed = await persist()
+      if (failed) setError(failed)
+      else onClose()
+    })
   }
 
   return (
@@ -87,15 +94,19 @@ function EditForm({
           <InvestmentEditor value={investment} onChange={setInvestmentDraft} />
         </>
       )}
+      {error && <p className={styles.error}>{error}</p>}
+
       <footer className={styles.footer}>
         <Button type="button" variant="ghost" onClick={onClose}>
           Cancelar
         </Button>
         <Button
           type="submit"
-          disabled={edit === 'profile' && profile.monthlyIncome <= 0}
+          disabled={
+            saving || (edit === 'profile' && profile.monthlyIncome <= 0)
+          }
         >
-          Guardar
+          {saving ? 'Guardando…' : 'Guardar'}
         </Button>
       </footer>
     </form>

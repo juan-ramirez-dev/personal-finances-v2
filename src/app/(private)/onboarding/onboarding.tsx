@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { syncInvestmentFixed, unassigned } from '@/lib/finance/calc'
 import { formatMoney } from '@/lib/finance/format'
@@ -50,8 +50,10 @@ const cleanFixed = (items: FixedExpense[]) =>
 const cleanCategories = (items: Category[]) => items.filter(c => c.name.trim())
 
 export function Onboarding({ userName }: { userName: string }) {
-  const { complete, loadDemo } = useFinance()
+  const { complete } = useFinance()
   const [step, setStep] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, startSaving] = useTransition()
   const [profile, setProfile] = useState<FinanceProfile>({
     monthlyIncome: 0,
     payday: 30,
@@ -98,11 +100,6 @@ export function Onboarding({ userName }: { userName: string }) {
         <div className={styles.progress}>
           <span style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
         </div>
-        <header className={styles.top}>
-          <Button variant="link" type="button" onClick={loadDemo}>
-            Usar datos demo
-          </Button>
-        </header>
 
         <form
           key={step}
@@ -110,7 +107,7 @@ export function Onboarding({ userName }: { userName: string }) {
           onSubmit={e => {
             e.preventDefault()
             if (!canContinue) return
-            if (isLast) complete(draft)
+            if (isLast) startSaving(async () => setError(await complete(draft)))
             else setStep(step + 1)
           }}
         >
@@ -136,6 +133,8 @@ export function Onboarding({ userName }: { userName: string }) {
             {step === 4 && <Recap draft={draft} />}
           </div>
 
+          {error && <p className={styles.error}>{error}</p>}
+
           <footer className={styles.footer}>
             <Button
               type="button"
@@ -145,8 +144,8 @@ export function Onboarding({ userName }: { userName: string }) {
             >
               Atrás
             </Button>
-            <Button type="submit" disabled={!canContinue}>
-              {isLast ? 'Entrar' : 'Siguiente'}
+            <Button type="submit" disabled={!canContinue || saving}>
+              {saving ? 'Guardando…' : isLast ? 'Entrar' : 'Siguiente'}
             </Button>
           </footer>
         </form>
