@@ -1,0 +1,2 @@
+-- Datos solo para desarrollo local. Corre con `pnpm db:reset`.
+-- Los roles base viven en la migración inicial, no aquí.

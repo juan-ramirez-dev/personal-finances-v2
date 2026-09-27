@@ -1,0 +1,96 @@
+.ring {
+  position: relative;
+  container-type: inline-size;
+  width: min(100%, 46dvh, 440px);
+  aspect-ratio: 1;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ticks line {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.track,
+.spent,
+.committed {
+  fill: none;
+  stroke-width: 7;
+  transition:
+    stroke-dasharray 700ms var(--ease),
+    stroke-dashoffset 700ms var(--ease);
+}
+
+.track {
+  stroke: var(--color-track);
+}
+
+.spent {
+  stroke: var(--color-primary);
+  animation: draw 1400ms var(--ease) both;
+}
+
+.committed {
+  stroke: var(--color-ink);
+  animation: draw 1400ms 200ms var(--ease) both;
+}
+
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.label {
+  margin: 0;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.amount {
+  margin: 0;
+  font-family: var(--font-serif);
+  /* Relativo al anillo para que la cifra nunca lo toque. */
+  font-size: clamp(1.5rem, 11cqi, 3.75rem);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  animation: enter 900ms var(--ease) both;
+}
+
+.amount[data-negative] {
+  color: var(--color-danger);
+}
+
+.sub {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+@keyframes draw {
+  from {
+    stroke-dasharray: 0 999;
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}

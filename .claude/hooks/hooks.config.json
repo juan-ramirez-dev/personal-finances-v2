@@ -1,0 +1,149 @@
+{
+  "dangerousCommands": {
+    "enabled": true,
+    "blockedPatterns": [
+      "\\bgit\\s+push\\b[^|&;\\n]*?(?<![/\\w-])(main|staging|feedback)(?![/\\w-])",
+      "\\bgit\\s+push\\b[^|&;\\n]*\\s(--force(-with-lease)?|-f)\\b",
+      "\\bgit\\b[^|&;\\n]*\\s--no-verify\\b",
+      "\\bgit\\s+commit\\b[^|&;\\n]*\\s-[a-zA-Z]*n[a-zA-Z]*\\b",
+      "\\bHUSKY=0\\b",
+      "core\\.hooksPath",
+      "\\brm\\s+-[a-z]*r[a-z]*\\s+[^|&;\\n]*\\.husky",
+      "\\bpnpm\\s+(add|install|i)\\b[^|&;\\n]*tailwind"
+    ],
+    "protectedBranches": ["main", "staging", "feedback"]
+  },
+  "sensitiveFiles": {
+    "enabled": true,
+    "protectedPatterns": [
+      "^\\.env$",
+      "^\\.env\\.(?!example$)",
+      "\\.git/",
+      "node_modules/",
+      "\\.pem$",
+      "\\.key$",
+      "\\.p12$",
+      "\\.pfx$",
+      "\\.secret$",
+      "\\.credentials$",
+      "package-lock\\.json$",
+      "yarn\\.lock$",
+      "pnpm-lock\\.yaml$",
+      "bun\\.lock$"
+    ]
+  },
+  "enforcePackageManager": {
+    "enabled": true,
+    "allowed": "pnpm",
+    "alternatives": {
+      "npm": {
+        "commands": [
+          "npm install",
+          "npm ci",
+          "npm run",
+          "npm exec",
+          "npm add",
+          "npm remove",
+          "npm uninstall"
+        ],
+        "replacements": {
+          "npm install": "pnpm install",
+          "npm ci": "pnpm install --frozen-lockfile",
+          "npm run": "pnpm run",
+          "npm exec": "pnpm exec",
+          "npm add": "pnpm add",
+          "npm remove": "pnpm remove",
+          "npm uninstall": "pnpm remove"
+        }
+      },
+      "npx": {
+        "commands": ["npx"],
+        "replacements": {
+          "npx": "pnpm dlx"
+        }
+      },
+      "yarn": {
+        "commands": [
+          "yarn install",
+          "yarn add",
+          "yarn remove",
+          "yarn run",
+          "yarn dlx"
+        ],
+        "replacements": {
+          "yarn install": "pnpm install",
+          "yarn add": "pnpm add",
+          "yarn remove": "pnpm remove",
+          "yarn run": "pnpm run",
+          "yarn dlx": "pnpm dlx"
+        }
+      },
+      "bun": {
+        "commands": ["bun install", "bun add", "bun remove", "bun run", "bunx"],
+        "replacements": {
+          "bun install": "pnpm install",
+          "bun add": "pnpm add",
+          "bun remove": "pnpm remove",
+          "bun run": "pnpm run",
+          "bunx": "pnpm dlx"
+        }
+      }
+    }
+  },
+  "prettierFormat": {
+    "enabled": true,
+    "extensions": [".json", ".css", ".md", ".yml", ".yaml"]
+  },
+  "eslintLint": {
+    "enabled": true,
+    "extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs"]
+  },
+  "enforceConventions": {
+    "enabled": true,
+    "fileNaming": {
+      "enabled": true,
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".js",
+        ".jsx",
+        ".mjs",
+        ".cjs",
+        ".css",
+        ".md"
+      ],
+      "exempt": [
+        "^(AGENTS|CLAUDE|README)\\.md$",
+        "(^|/)SKILL\\.md$",
+        "^\\.github/",
+        "(^|/)_[a-z0-9-]+\\.md$",
+        "^next-env\\.d\\.ts$",
+        "^\\.next/",
+        "^node_modules/"
+      ]
+    },
+    "colors": {
+      "enabled": true,
+      "extensions": [".ts", ".tsx", ".js", ".jsx", ".css"],
+      "exempt": [
+        "^src/app/globals\\.css$",
+        "^src/lib/constants/colors\\.ts$",
+        "^eslint-rules/",
+        "^\\.claude/",
+        "^\\.next/",
+        "^node_modules/"
+      ]
+    },
+    "forbiddenCode": {
+      "enabled": true,
+      "extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".css"],
+      "exempt": [
+        "^eslint-rules/",
+        "^eslint\\.config\\.mjs$",
+        "^\\.claude/",
+        "^\\.next/",
+        "^node_modules/"
+      ]
+    }
+  }
+}

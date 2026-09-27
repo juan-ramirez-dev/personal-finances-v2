@@ -1,0 +1,47 @@
+name: Validate migrations
+
+# Crea una DB local limpia y corre todas las migraciones + seed.
+# Si alguna falla, el PR no se puede mergear.
+# Corre en todo PR (para poder ser check obligatorio) y se salta
+# los pasos pesados si el PR no toca supabase/.
+on:
+  pull_request:
+    branches: [feedback, staging, main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔎 ¿Cambió supabase/?
+        id: changes
+        run: |
+          if git diff --quiet "origin/${{ github.base_ref }}...HEAD" -- supabase/; then
+            echo "supabase=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios en supabase/. Nada que validar."
+          else
+            echo "supabase=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 🟩 Setup Supabase CLI
+        if: steps.changes.outputs.supabase == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.58.5
+
+      - name: 🐘 Start local DB
+        if: steps.changes.outputs.supabase == 'true'
+        run: supabase db start
+
+      - name: 🔁 Apply migrations + seed
+        if: steps.changes.outputs.supabase == 'true'
+        run: supabase db reset --local
+
+      - name: 🔍 Lint SQL
+        if: steps.changes.outputs.supabase == 'true'
+        run: supabase db lint --local --fail-on error

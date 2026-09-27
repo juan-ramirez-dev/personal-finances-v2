@@ -1,0 +1,11 @@
+# Bloquea push directo a ramas protegidas. Usa una rama y abre un PR.
+protected="main staging feedback"
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  branch="${remote_ref#refs/heads/}"
+  for p in $protected; do
+    if [ "$branch" = "$p" ]; then
+      echo "Push directo a '$p' bloqueado. Crea una rama y abre un PR."
+      exit 1
+    fi
+  done
+done
