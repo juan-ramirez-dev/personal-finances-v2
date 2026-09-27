@@ -1,13 +1,13 @@
 'use client'
 
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useOptimistic, useTransition } from 'react'
 import {
   summarize,
   syncInvestmentFixed,
   toISODate,
   type Summary,
 } from '@/lib/finance/calc'
-import { createDemoData } from '@/lib/finance/demo-data'
+import type { FinanceState } from '@/lib/finance/queries'
 import type {
   Category,
   Expense,
@@ -16,22 +16,35 @@ import type {
   FixedExpense,
   Investment,
 } from '@/lib/finance/types'
+import {
+  addExpense,
+  completeOnboarding,
+  removeExpense,
+  saveCategories,
+  saveFixed,
+  saveInvestment,
+  saveProfile,
+  toggleFixedPaid,
+  type ActionResult,
+} from './actions'
 
-// Solo memoria: al recargar se pierde todo. El backend reemplaza esto.
+// Cada acción devuelve el error a mostrar, o null si se guardó.
+type Run = Promise<string | null>
+
 interface FinanceContextValue {
   data: FinanceData | null
   summary: Summary | null
-  complete: (data: Omit<FinanceData, 'expenses'>) => void
-  loadDemo: () => void
-  reset: () => void
-  addExpense: (expense: Omit<Expense, 'id'>) => void
-  removeExpense: (id: string) => void
-  toggleFixedPaid: (id: string) => void
-  setFixed: (fixed: FixedExpense[]) => void
-  setCategories: (categories: Category[]) => void
-  setProfile: (profile: FinanceProfile) => void
-  setInvestment: (investment: Investment) => void
+  complete: (data: Omit<FinanceData, 'expenses'>) => Run
+  addExpense: (expense: Omit<Expense, 'id'>) => Run
+  removeExpense: (id: string) => Run
+  toggleFixedPaid: (id: string) => Run
+  setFixed: (fixed: FixedExpense[]) => Run
+  setCategories: (categories: Category[]) => Run
+  setProfile: (profile: FinanceProfile) => Run
+  setInvestment: (investment: Investment) => Run
 }
+
+type Update = (d: FinanceData) => FinanceData
 
 const FinanceContext = createContext<FinanceContextValue | null>(null)
 
@@ -39,74 +52,114 @@ export function newId() {
   return crypto.randomUUID()
 }
 
-export function FinanceProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<FinanceData | null>(null)
+// Marcar pagado = registrar lo que falta. Desmarcar = borrar sus pagos del ciclo.
+// Solo para la vista optimista: la regla real vive en toggle_fixed_paid (SQL).
+function togglePaid(d: FinanceData, id: string): FinanceData {
+  const summary = summarize(d, new Date())
+  const status = summary.fixed.find(f => f.fixed.id === id)
+  if (!status) return d
+  if (!status.isPaid) {
+    const payment: Expense = {
+      id: newId(),
+      amount: status.pending,
+      description: status.fixed.name,
+      date: toISODate(new Date()),
+      target: { kind: 'fixed', id },
+    }
+    return { ...d, expenses: [...d.expenses, payment] }
+  }
+  const cycleIds = new Set(summary.cycleExpenses.map(e => e.id))
+  return {
+    ...d,
+    expenses: d.expenses.filter(
+      e =>
+        !(
+          e.target.kind === 'fixed' &&
+          e.target.id === id &&
+          cycleIds.has(e.id)
+        ),
+    ),
+  }
+}
 
-  const value = useMemo<FinanceContextValue>(() => {
-    const update = (fn: (d: FinanceData) => FinanceData) =>
-      setData(d => (d ? fn(d) : d))
+export function FinanceProvider({
+  initial,
+  children,
+}: {
+  initial: FinanceState | null
+  children: React.ReactNode
+}) {
+  const [data, applyOptimistic] = useOptimistic(
+    initial?.data ?? null,
+    (d: FinanceData | null, update: Update) => (d ? update(d) : d),
+  )
+  const [, startTransition] = useTransition()
 
-    return {
-      data,
-      summary: data ? summarize(data, new Date()) : null,
-      complete: d =>
-        setData({
-          ...d,
-          fixed: syncInvestmentFixed(d.fixed, d.investment),
-          expenses: [],
-        }),
-      loadDemo: () => setData(createDemoData(new Date())),
-      reset: () => setData(null),
-      addExpense: expense =>
-        update(d => ({
-          ...d,
-          expenses: [...d.expenses, { ...expense, id: newId() }],
-        })),
-      removeExpense: id =>
-        update(d => ({ ...d, expenses: d.expenses.filter(e => e.id !== id) })),
-      // Marcar pagado = registrar lo que falta. Desmarcar = borrar sus pagos del ciclo.
-      toggleFixedPaid: id =>
-        update(d => {
-          const status = summarize(d, new Date()).fixed.find(
-            f => f.fixed.id === id,
-          )
-          if (!status) return d
-          if (!status.isPaid) {
-            const payment: Expense = {
-              id: newId(),
-              amount: status.pending,
-              description: status.fixed.name,
-              date: toISODate(new Date()),
-              target: { kind: 'fixed', id },
-            }
-            return { ...d, expenses: [...d.expenses, payment] }
-          }
-          const cycleIds = new Set(
-            summarize(d, new Date()).cycleExpenses.map(e => e.id),
-          )
-          return {
-            ...d,
-            expenses: d.expenses.filter(
-              e =>
-                !(
-                  e.target.kind === 'fixed' &&
-                  e.target.id === id &&
-                  cycleIds.has(e.id)
-                ),
-            ),
-          }
-        }),
-      setFixed: fixed => update(d => ({ ...d, fixed })),
-      setCategories: categories => update(d => ({ ...d, categories })),
-      setProfile: profile => update(d => ({ ...d, profile })),
-      setInvestment: investment =>
-        update(d => ({
+  // El cambio se ve al instante; al terminar llega el dato real del server.
+  const run = (update: Update | null, action: () => Promise<ActionResult>) =>
+    new Promise<string | null>(resolve => {
+      startTransition(async () => {
+        if (update) applyOptimistic(update)
+        try {
+          resolve((await action()).error)
+        } catch {
+          resolve('No se pudo conectar. Intenta de nuevo.')
+        }
+      })
+    })
+
+  // Sin cambios pendientes se usa el resumen del server (fuente de verdad).
+  const summary =
+    !data || !initial
+      ? null
+      : data === initial.data
+        ? initial.summary
+        : summarize(data, new Date())
+
+  const value: FinanceContextValue = {
+    data,
+    summary,
+    complete: d => run(null, () => completeOnboarding(d)),
+    addExpense: expense =>
+      run(
+        d => ({ ...d, expenses: [...d.expenses, { ...expense, id: newId() }] }),
+        () => addExpense(expense),
+      ),
+    removeExpense: id =>
+      run(
+        d => ({ ...d, expenses: d.expenses.filter(e => e.id !== id) }),
+        () => removeExpense(id),
+      ),
+    toggleFixedPaid: id =>
+      run(
+        d => togglePaid(d, id),
+        () => toggleFixedPaid(id),
+      ),
+    setFixed: fixed =>
+      run(
+        d => ({ ...d, fixed }),
+        () => saveFixed(fixed),
+      ),
+    setCategories: categories =>
+      run(
+        d => ({ ...d, categories }),
+        () => saveCategories(categories),
+      ),
+    setProfile: profile =>
+      run(
+        d => ({ ...d, profile }),
+        () => saveProfile(profile),
+      ),
+    setInvestment: investment =>
+      run(
+        d => ({
           ...d,
           investment,
           fixed: syncInvestmentFixed(d.fixed, investment),
-        })),
-    }
-  }, [data])
+        }),
+        () => saveInvestment(investment),
+      ),
+  }
 
   return <FinanceContext value={value}>{children}</FinanceContext>
 }

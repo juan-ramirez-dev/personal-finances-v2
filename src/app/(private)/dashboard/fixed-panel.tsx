@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import type { Summary } from '@/lib/finance/calc'
 import { formatMoney } from '@/lib/finance/format'
@@ -13,6 +14,7 @@ interface FixedPanelProps {
 
 export function FixedPanel({ summary, onEdit }: FixedPanelProps) {
   const { toggleFixedPaid } = useFinance()
+  const [error, setError] = useState<string | null>(null)
   const paidCount = summary.fixed.filter(f => f.isPaid).length
   const total = summary.fixed.length
   // Pendientes primero, ordenados por día de pago.
@@ -44,7 +46,7 @@ export function FixedPanel({ summary, onEdit }: FixedPanelProps) {
               className={styles.fixedRow}
               data-paid={isPaid || undefined}
               aria-pressed={isPaid}
-              onClick={() => toggleFixedPaid(fixed.id)}
+              onClick={async () => setError(await toggleFixedPaid(fixed.id))}
             >
               <span className={styles.check} aria-hidden>
                 {isPaid ? '✓' : ''}
@@ -69,6 +71,8 @@ export function FixedPanel({ summary, onEdit }: FixedPanelProps) {
           <li className={styles.empty}>Sin gastos fijos. Agrégalos.</li>
         )}
       </ul>
+
+      {error && <p className={styles.error}>{error}</p>}
 
       <footer className={styles.foot}>
         <span>

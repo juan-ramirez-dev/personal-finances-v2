@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import field from '@/components/ui/field.module.css'
 import { Modal } from '@/components/ui/modal'
@@ -44,6 +44,8 @@ function AddExpenseForm({ initialTarget, onClose }: AddExpenseModalProps) {
   const [targetId, setTargetId] = useState(initialTarget?.id ?? '')
   const [newName, setNewName] = useState('')
   const [newBudget, setNewBudget] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, startSaving] = useTransition()
   if (!summary || !data) return null
 
   const pendingFixed = summary.fixed.filter(f => !f.isPaid)
@@ -60,22 +62,26 @@ function AddExpenseForm({ initialTarget, onClose }: AddExpenseModalProps) {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!valid) return
-    let id = targetId
-    if (isNew) {
-      id = newId()
-      setCategories([
-        ...data.categories,
-        { id, name: newName.trim(), budget: newBudget },
-      ])
-    }
-    addExpense({
-      amount,
-      description: description.trim(),
-      date,
-      target: { kind, id },
+    if (!valid || saving) return
+    startSaving(async () => {
+      let id = targetId
+      if (isNew) {
+        id = newId()
+        const failed = await setCategories([
+          ...data.categories,
+          { id, name: newName.trim(), budget: newBudget },
+        ])
+        if (failed) return setError(failed)
+      }
+      const failed = await addExpense({
+        amount,
+        description: description.trim(),
+        date,
+        target: { kind, id },
+      })
+      if (failed) setError(failed)
+      else onClose()
     })
-    onClose()
   }
 
   return (
@@ -187,12 +193,14 @@ function AddExpenseForm({ initialTarget, onClose }: AddExpenseModalProps) {
         </div>
       )}
 
+      {error && <p className={styles.error}>{error}</p>}
+
       <footer className={styles.footer}>
         <Button type="button" variant="ghost" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={!valid}>
-          Guardar gasto
+        <Button type="submit" disabled={!valid || saving}>
+          {saving ? 'Guardando…' : 'Guardar gasto'}
         </Button>
       </footer>
     </form>
