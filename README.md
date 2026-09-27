@@ -3,12 +3,12 @@
 Cuánto tengo disponible y en qué se me va el dinero.
 Basado en `next-supabase-template`.
 
-## Estado: v1 solo frontend
+## Estado
 
-- Login simulado. Usuario: `juan@finanzas.co` · clave: `finanzas123`.
-- Datos en memoria. **Al recargar se pierde todo** y vuelve el onboarding.
-- "Usar datos demo" salta el onboarding con datos de ejemplo.
-- Backend pendiente: `docs/backend-checklist.md`.
+- Datos en Supabase. Sin registro: un solo usuario creado por migración.
+- Usuario: `juan@finanzas.co` · clave temporal: `finanzas123`.
+  - En hosted: cambiarla en el dashboard tras el primer deploy.
+- Checklist del backend: `docs/backend-checklist.md`.
 
 ## Arrancar
 
@@ -18,6 +18,8 @@ pnpm dev
 ```
 
 `.env.local` necesita `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ver `.env.example`).
+
+DB local: `pnpm db:start` → `pnpm db:reset`. Tests de RLS: `supabase test db`.
 
 ## Cómo funciona
 
@@ -39,5 +41,5 @@ pnpm dev
 
 - `AGENTS.md` → reglas (humanos y agentes)
 - `docs/backend-checklist.md` → lo que falta en backend
-- `docs/auth.md` → sesión y guards (auth real, aún sin usar)
+- `docs/auth.md` → sesión y guards
 - `docs/css.md` → tokens y estilos

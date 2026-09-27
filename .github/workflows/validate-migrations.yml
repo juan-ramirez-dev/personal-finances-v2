@@ -8,6 +8,7 @@ on:
       - staging
     paths:
       - 'supabase/migrations/**'
+      - 'supabase/tests/**'
 
 jobs:
   validate-migrations:
@@ -29,3 +30,7 @@ jobs:
       - name: Apply migrations on local DB
         run: |
           npx supabase@latest db reset --local --no-seed --yes
+
+      - name: Test RLS (pgTAP)
+        run: |
+          npx supabase@latest test db
