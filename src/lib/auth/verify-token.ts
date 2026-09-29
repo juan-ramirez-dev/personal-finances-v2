@@ -12,6 +12,7 @@ const jwks = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`))
 export interface TokenClaims {
   userId: string
   email: string | null
+  name: string | null
   expiresAt: number // ms
 }
 
@@ -24,6 +25,12 @@ async function verify(token: string): Promise<JWTPayload> {
   return (await jwtVerify(token, jwks, options)).payload
 }
 
+function readName(metadata: unknown): string | null {
+  if (typeof metadata !== 'object' || metadata === null) return null
+  const name: unknown = Reflect.get(metadata, 'name')
+  return typeof name === 'string' ? name : null
+}
+
 // Devuelve null si el token es inválido o venció. Nunca lanza.
 export async function verifyToken(token: string): Promise<TokenClaims | null> {
   try {
@@ -32,6 +39,7 @@ export async function verifyToken(token: string): Promise<TokenClaims | null> {
     return {
       userId: payload.sub,
       email: typeof payload.email === 'string' ? payload.email : null,
+      name: readName(payload.user_metadata),
       expiresAt: payload.exp * 1000,
     }
   } catch {

@@ -1,5 +1,6 @@
 'use server'
 
+import { decodeJwt } from 'jose'
 import { redirect } from 'next/navigation'
 import { deleteSession, setSession } from '@/lib/auth/session'
 import { createAnonClient } from '@/lib/supabase/server'
@@ -28,12 +29,13 @@ export async function login(
     email,
     password,
   })
-  if (error || !data.session?.expires_at) {
-    return { error: 'Credenciales inválidas' }
-  }
+  if (error || !data.session) return { error: 'Credenciales inválidas' }
 
-  // Solo el access token. El refresh se descarta (ver docs/auth.md).
-  await setSession(data.session.access_token, data.session.expires_at * 1000)
+  // Solo guardamos el access token. El refresh token se descarta a propósito.
+  const { exp } = decodeJwt(data.session.access_token)
+  if (!exp) return { error: 'Token sin expiración' }
+  await setSession(data.session.access_token, exp * 1000)
+
   redirect('/')
 }
 
@@ -45,10 +47,11 @@ export async function register(
   if (!result.ok) return { error: result.error, notice: null }
 
   const { fullName, email, password } = result.data
+  // `name` en metadata: verify-token lo lee para mostrarlo en la app.
   const { data, error } = await createAnonClient().auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName } },
+    options: { data: { name: fullName } },
   })
   if (error) {
     console.error('No se pudo registrar', error.message)
@@ -56,14 +59,17 @@ export async function register(
   }
 
   // Sin sesión = el proyecto pide confirmar el email.
-  if (!data.session?.expires_at) {
+  if (!data.session) {
     return {
       error: null,
       notice: 'Revisa tu correo para confirmar la cuenta',
     }
   }
 
-  await setSession(data.session.access_token, data.session.expires_at * 1000)
+  const { exp } = decodeJwt(data.session.access_token)
+  if (!exp) return { error: 'Token sin expiración', notice: null }
+  await setSession(data.session.access_token, exp * 1000)
+
   redirect('/')
 }
 

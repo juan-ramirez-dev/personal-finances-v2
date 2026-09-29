@@ -1,19 +1,17 @@
 import { requireRole } from '@/lib/auth/guards'
-import { getSession } from '@/lib/auth/session'
-import { createUserClient } from '@/lib/supabase/server'
+import { getFinance } from '@/lib/finance/queries'
 import { FinanceApp } from './finance-app'
+import { FinanceProvider } from './finance-provider'
+import { SessionTimer } from './session-timer'
 
 export default async function HomePage() {
   const user = await requireRole()
-  const session = await getSession()
+  const finance = await getFinance()
 
-  const { data } = session
-    ? await createUserClient(session.accessToken)
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .maybeSingle()
-    : { data: null }
-
-  return <FinanceApp userName={data?.full_name ?? user.email ?? ''} />
+  return (
+    <FinanceProvider initial={finance}>
+      <SessionTimer expiresAt={user.expiresAt} />
+      <FinanceApp userName={user.name ?? user.email ?? ''} />
+    </FinanceProvider>
+  )
 }

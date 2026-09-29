@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { parseISODate } from '@/lib/finance/calc'
 import { formatMoney, formatShortDate } from '@/lib/finance/format'
@@ -13,6 +14,7 @@ interface MovementsModalProps {
 
 export function MovementsModal({ open, onClose }: MovementsModalProps) {
   const { summary, data, removeExpense } = useFinance()
+  const [error, setError] = useState<string | null>(null)
   if (!summary || !data) return null
 
   const targetName = (kind: string, id: string) =>
@@ -43,7 +45,7 @@ export function MovementsModal({ open, onClose }: MovementsModalProps) {
               type="button"
               className={styles.remove}
               aria-label="Borrar gasto"
-              onClick={() => removeExpense(e.id)}
+              onClick={async () => setError(await removeExpense(e.id))}
             >
               ×
             </button>
@@ -53,6 +55,7 @@ export function MovementsModal({ open, onClose }: MovementsModalProps) {
           <li className={styles.hint}>Aún no hay movimientos.</li>
         )}
       </ul>
+      {error && <p className={styles.error}>{error}</p>}
       <p className={styles.total}>
         Total gastado <strong>{formatMoney(summary.spent)}</strong>
       </p>

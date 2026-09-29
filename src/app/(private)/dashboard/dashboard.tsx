@@ -22,7 +22,7 @@ type Open =
   | null
 
 export function Dashboard({ userName }: { userName: string }) {
-  const { summary, reset } = useFinance()
+  const { summary } = useFinance()
   const [open, setOpen] = useState<Open>(null)
   if (!summary) return null
 
@@ -53,9 +53,6 @@ export function Dashboard({ userName }: { userName: string }) {
             onClick={() => setOpen({ kind: 'edit', edit: 'profile' })}
           >
             Ingreso
-          </button>
-          <button type="button" onClick={reset}>
-            Reiniciar
           </button>
           <form action={logout}>
             <button type="submit">Salir</button>

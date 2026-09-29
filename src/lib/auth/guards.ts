@@ -7,6 +7,7 @@ import { getSession } from './session'
 export interface AuthUser {
   id: string
   email: string | null
+  name: string | null
   role: Role | null
   expiresAt: number
 }
@@ -38,6 +39,7 @@ export async function authorize(roles?: readonly Role[]): Promise<AuthUser> {
   return {
     id: session.userId,
     email: session.email,
+    name: session.name,
     role,
     expiresAt: session.expiresAt,
   }

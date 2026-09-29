@@ -1,62 +1,47 @@
 # Backend · checklist
 
-Hoy todo vive en memoria (`src/app/(private)/finance-provider.tsx`).
-Esto es lo que falta para que sea real. Nada está hecho.
+Estado del backend. Todo vive en Supabase.
 
 ## 1. Usuario semilla
 
-- [ ] Migración que crea un usuario en `auth.users` (email + password con `crypt()`), `email_confirmed_at` lleno.
-- [ ] Fila en `auth.identities` para ese usuario (si no, el login con password falla).
-- [ ] El trigger `handle_new_user` ya crea su `profiles` con rol `user`. Verificar.
-- [ ] Password solo en la migración de local/seed. En hosted: crear el usuario a mano en el dashboard.
+- [x] Migración `seed_user`: usuario en `auth.users` + `auth.identities`, email confirmado.
+- [x] Trigger `handle_new_user` crea su `profiles` con rol `user`.
+- [x] Signup on (`/register`). Local: `supabase/config.toml`.
+- [ ] Hosted: Auth → Providers → Email → "Allow new users" on.
+- [ ] Hosted: cambiar la clave temporal tras el primer deploy.
 
-## 2. Tablas (todas con RLS: `user_id = auth.uid()`)
+## 2. Tablas (RLS: `user_id = auth.uid()`)
 
-- [ ] `finance_settings`: `user_id` (pk), `monthly_income`, `payday` (1-31, check), `onboarded_at`.
-- [ ] `fixed_expenses`: `id`, `user_id`, `name`, `amount`, `due_day`, `is_investment`, `archived_at`.
-- [ ] `categories`: `id`, `user_id`, `name` (único por usuario), `budget` (>= 0), `archived_at`.
-- [ ] `expenses`: `id`, `user_id`, `amount` (> 0), `description`, `spent_on` (date), `fixed_expense_id` null, `category_id` null.
-  - [ ] Check: exactamente uno de `fixed_expense_id` / `category_id`.
-  - [ ] Índice `(user_id, spent_on)`.
-- [ ] `investments`: `user_id` (pk), `has_investments`, `monthly_contribution`, `total_balance`.
-- [ ] Montos en `bigint` (pesos enteros, sin decimales).
-- [ ] Borrado lógico (`archived_at`) en fijos y categorías para no romper gastos viejos.
+- [x] `finance_settings`, `fixed_expenses`, `categories`, `expenses`, `investments`.
+- [x] Montos `bigint`. Borrado lógico (`archived_at`) en fijos y categorías.
+- [x] Gasto va a un fijo **o** a una categoría (check). FK con `user_id`: no se apunta a filas ajenas.
 
-## 3. Lógica
+## 3. Lógica (SQL, `supabase/migrations/*_finance_functions.sql`)
 
-- [ ] Función SQL o módulo server `getCycle(payday, today)` → mismo cálculo que `src/lib/finance/calc.ts`.
-- [ ] Resumen del ciclo en un solo query (RPC `cycle_summary`): disponible, gastado, comprometido, fijos con estado, categorías con gastado/excedido.
-- [ ] Zona horaria fija `America/Bogota` para "hoy" y fechas de gasto.
-- [ ] Aporte de inversión = fijo con `is_investment = true`, sincronizado al guardar inversiones.
+- [x] `get_cycle` = `getCycle` de `calc.ts`.
+- [x] `cycle_summary`: todo el panel en un llamado. `null` si falta onboarding.
+- [x] "Hoy" en `America/Bogota` (`bogota_today`).
+- [x] `complete_onboarding`, `toggle_fixed_paid`, `save_fixed`, `save_categories`, `save_investment`.
+- [x] Aporte de inversión = fijo `is_investment`, sincronizado en `save_investment`.
 
-## 4. Server actions (todas con `authorize()` al inicio)
+## 4. Server actions (`src/app/(private)/actions.ts`)
 
-- [ ] `completeOnboarding(data)` → inserta settings, fijos, categorías, inversiones en una transacción (RPC).
-- [ ] `addExpense`, `removeExpense`.
-- [ ] `toggleFixedPaid(id)` → crea pago por lo pendiente o borra pagos del ciclo.
-- [ ] `saveFixed`, `saveCategories`, `saveProfile`, `saveInvestment`.
-- [ ] Validación de input en el server (montos > 0, día 1-31, nombres no vacíos).
-- [ ] `revalidatePath('/')` después de cada cambio.
+- [x] `authorize()` → validación (`src/lib/finance/validate.ts`) → RLS → `revalidatePath('/')`.
 
-## 5. Auth real
+## 5. Auth
 
-- [x] Volver a `signInWithPassword` en `src/app/(auth)/actions.ts` (ver template).
-- [x] Borrar `src/lib/mock/auth.ts`.
-- [x] Página `/` con `requireRole()` (nombre leído en el server; datos de finanzas pendientes).
+- [x] `signInWithPassword` real. Mock borrado.
+- [x] `/` con `requireRole()`. Onboarding si no hay `onboarded_at`.
+- [x] `SessionTimer` (2h).
 - [x] Registro público en `/register`.
-- [ ] Redirigir a onboarding si `finance_settings.onboarded_at` es null.
-- [ ] Restaurar `SessionTimer` (vence a las 2h).
 
-## 6. Frontend al conectar
+## 6. Frontend
 
-- [ ] `FinanceProvider` recibe datos iniciales del server en vez de `useState(null)`.
-- [ ] Acciones del provider llaman server actions (optimistic UI con `useOptimistic`).
-- [ ] Quitar botones "Usar datos demo" y "Reiniciar".
-- [ ] Estados de error y carga en modales.
+- [x] `FinanceProvider` recibe datos del server + `useOptimistic`.
+- [x] Sin "Usar datos demo" ni "Reiniciar".
+- [x] Errores y estado "Guardando…" en modales.
 
 ## 7. Calidad
 
-- [ ] `pnpm db:types` tras migrar.
-- [ ] Tests de `calc.ts` (ciclo, disponible, excedidos).
-- [ ] Tests de las policies RLS (otro usuario no ve nada).
-- [ ] `pnpm check` en verde.
+- [x] Tests RLS: `supabase/tests/rls.test.sql` (`supabase test db`, corre en CI).
+- [ ] Tests de `calc.ts` (pendiente, no elegidos aún).

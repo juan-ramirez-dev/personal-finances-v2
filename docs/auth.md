@@ -2,7 +2,7 @@
 
 ## Flujo
 
-1. Registro (`/register`) → Supabase `signUp` con `full_name` en metadata.
+1. Registro (`/register`) → Supabase `signUp` con `name` en metadata (el guard lo lee del token).
    - Si devuelve sesión → entra directo. Si pide confirmar email → mensaje.
    - Login (`/login`) → Supabase `signInWithPassword`.
 2. Se guarda solo el `access_token` en cookie `session`:
@@ -32,7 +32,7 @@
 | `requireRole(roles?)`  | Página        | redirige          |
 
 - Rol: `profiles.role_id → roles.role_slug`. Consulta a DB en cada request (con `cache()` por request).
-- Al registrarse, un trigger crea el perfil con rol `user` y `full_name`.
+- Al registrarse, un trigger crea el perfil con rol `user`.
 - Hacer admin a alguien (SQL editor):
 
 ```sql

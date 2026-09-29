@@ -86,11 +86,6 @@
   transition: width 500ms var(--ease);
 }
 
-.top {
-  display: flex;
-  justify-content: flex-end;
-}
-
 .form {
   display: flex;
   flex: 1;
@@ -227,4 +222,10 @@
   .content {
     padding: var(--space-6);
   }
+}
+
+.error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
 }
