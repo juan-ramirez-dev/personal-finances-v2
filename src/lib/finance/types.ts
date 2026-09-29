@@ -30,6 +30,14 @@ export interface Expense {
   target: ExpenseTarget
 }
 
+// Plata extra fuera del sueldo. Solo suma en el ciclo de su fecha.
+export interface Income {
+  id: string
+  amount: number
+  description: string
+  date: string // YYYY-MM-DD
+}
+
 export interface Investment {
   hasInvestments: boolean
   monthlyContribution: number
@@ -42,4 +50,5 @@ export interface FinanceData {
   categories: Category[]
   investment: Investment
   expenses: Expense[]
+  incomes: Income[]
 }

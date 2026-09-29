@@ -163,6 +163,33 @@ export type Database = {
         }
         Relationships: []
       }
+      incomes: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          received_on: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string
+          id?: string
+          received_on: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          received_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       investments: {
         Row: {
           has_investments: boolean

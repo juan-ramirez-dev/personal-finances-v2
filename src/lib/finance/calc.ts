@@ -3,6 +3,7 @@ import type {
   Expense,
   FinanceData,
   FixedExpense,
+  Income,
   Investment,
 } from './types'
 
@@ -41,8 +42,8 @@ export function parseISODate(value: string) {
   return new Date(y, m - 1, d)
 }
 
-export function inCycle(expense: Expense, cycle: Cycle) {
-  const date = parseISODate(expense.date)
+export function inCycle(item: Expense | Income, cycle: Cycle) {
+  const date = parseISODate(item.date)
   return date >= cycle.start && date < cycle.end
 }
 
@@ -70,6 +71,7 @@ export interface CategoryStatus {
 export interface Summary {
   cycle: Cycle
   income: number
+  extraIncome: number
   spent: number
   committed: number
   available: number
@@ -77,6 +79,7 @@ export interface Summary {
   categories: CategoryStatus[]
   overBudget: CategoryStatus[]
   cycleExpenses: Expense[]
+  cycleIncomes: Income[]
   daysToPayday: number
 }
 
@@ -86,6 +89,9 @@ export function summarize(data: FinanceData, today: Date): Summary {
   const cycle = getCycle(data.profile.payday, today)
   const cycleExpenses = data.expenses
     .filter(e => inCycle(e, cycle))
+    .sort((a, b) => b.date.localeCompare(a.date))
+  const cycleIncomes = data.incomes
+    .filter(i => inCycle(i, cycle))
     .sort((a, b) => b.date.localeCompare(a.date))
 
   const fixed = data.fixed.map(f => {
@@ -109,7 +115,8 @@ export function summarize(data: FinanceData, today: Date): Summary {
 
   const spent = cycleExpenses.reduce((sum, e) => sum + e.amount, 0)
   const committed = fixed.reduce((sum, f) => sum + f.pending, 0)
-  const income = data.profile.monthlyIncome
+  const extraIncome = cycleIncomes.reduce((sum, i) => sum + i.amount, 0)
+  const income = data.profile.monthlyIncome + extraIncome
   const startOfToday = new Date(
     today.getFullYear(),
     today.getMonth(),
@@ -119,6 +126,7 @@ export function summarize(data: FinanceData, today: Date): Summary {
   return {
     cycle,
     income,
+    extraIncome,
     spent,
     committed,
     available: income - spent - committed,
@@ -129,6 +137,7 @@ export function summarize(data: FinanceData, today: Date): Summary {
       .filter(c => c.over > 0 && c.category.budget > 0)
       .sort((a, b) => b.over - a.over),
     cycleExpenses,
+    cycleIncomes,
     daysToPayday: Math.round(
       (cycle.end.getTime() - startOfToday.getTime()) / DAY_MS,
     ),
@@ -136,7 +145,7 @@ export function summarize(data: FinanceData, today: Date): Summary {
 }
 
 // Lo que queda del ingreso tras fijos y presupuestos. Se muestra en el onboarding.
-export function unassigned(data: Omit<FinanceData, 'expenses'>) {
+export function unassigned(data: Omit<FinanceData, 'expenses' | 'incomes'>) {
   const fixed = data.fixed.reduce((sum, f) => sum + f.amount, 0)
   const budgets = data.categories.reduce((sum, c) => sum + c.budget, 0)
   return data.profile.monthlyIncome - fixed - budgets

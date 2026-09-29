@@ -13,7 +13,7 @@ interface MovementsModalProps {
 }
 
 export function MovementsModal({ open, onClose }: MovementsModalProps) {
-  const { summary, data, removeExpense } = useFinance()
+  const { summary, data, removeExpense, removeIncome } = useFinance()
   const [error, setError] = useState<string | null>(null)
   if (!summary || !data) return null
 
@@ -59,6 +59,36 @@ export function MovementsModal({ open, onClose }: MovementsModalProps) {
       <p className={styles.total}>
         Total gastado <strong>{formatMoney(summary.spent)}</strong>
       </p>
+
+      {summary.cycleIncomes.length > 0 && (
+        <>
+          <h3 className={styles.sectionTitle}>Ingresos extra</h3>
+          <ul className={styles.table}>
+            {summary.cycleIncomes.map(i => (
+              <li key={i.id} className={styles.item}>
+                <span className={styles.date}>
+                  {formatShortDate(parseISODate(i.date))}
+                </span>
+                <span className={styles.desc}>
+                  {i.description || 'Sin descripción'}
+                </span>
+                <span className={styles.money}>+ {formatMoney(i.amount)}</span>
+                <button
+                  type="button"
+                  className={styles.remove}
+                  aria-label="Borrar ingreso"
+                  onClick={async () => setError(await removeIncome(i.id))}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.total}>
+            Total extra <strong>+ {formatMoney(summary.extraIncome)}</strong>
+          </p>
+        </>
+      )}
     </Modal>
   )
 }
