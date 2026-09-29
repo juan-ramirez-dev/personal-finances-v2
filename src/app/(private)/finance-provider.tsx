@@ -14,12 +14,15 @@ import type {
   FinanceData,
   FinanceProfile,
   FixedExpense,
+  Income,
   Investment,
 } from '@/lib/finance/types'
 import {
   addExpense,
+  addIncome,
   completeOnboarding,
   removeExpense,
+  removeIncome,
   saveCategories,
   saveFixed,
   saveInvestment,
@@ -34,9 +37,11 @@ type Run = Promise<string | null>
 interface FinanceContextValue {
   data: FinanceData | null
   summary: Summary | null
-  complete: (data: Omit<FinanceData, 'expenses'>) => Run
+  complete: (data: Omit<FinanceData, 'expenses' | 'incomes'>) => Run
   addExpense: (expense: Omit<Expense, 'id'>) => Run
   removeExpense: (id: string) => Run
+  addIncome: (income: Omit<Income, 'id'>) => Run
+  removeIncome: (id: string) => Run
   toggleFixedPaid: (id: string) => Run
   setFixed: (fixed: FixedExpense[]) => Run
   setCategories: (categories: Category[]) => Run
@@ -129,6 +134,16 @@ export function FinanceProvider({
       run(
         d => ({ ...d, expenses: d.expenses.filter(e => e.id !== id) }),
         () => removeExpense(id),
+      ),
+    addIncome: income =>
+      run(
+        d => ({ ...d, incomes: [...d.incomes, { ...income, id: newId() }] }),
+        () => addIncome(income),
+      ),
+    removeIncome: id =>
+      run(
+        d => ({ ...d, incomes: d.incomes.filter(i => i.id !== id) }),
+        () => removeIncome(id),
       ),
     toggleFixedPaid: id =>
       run(

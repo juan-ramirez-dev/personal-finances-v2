@@ -4,6 +4,7 @@ import type {
   FinanceData,
   FinanceProfile,
   FixedExpense,
+  Income,
   Investment,
 } from './types'
 
@@ -25,6 +26,8 @@ const isDay = (v: unknown): v is number =>
 const isName = (v: unknown): v is string =>
   typeof v === 'string' && v.trim().length > 0
 const isId = (v: unknown): v is string => typeof v === 'string' && UUID.test(v)
+const isDate = (v: unknown): v is string =>
+  typeof v === 'string' && ISO_DATE.test(v) && !Number.isNaN(Date.parse(v))
 
 export function validateId(input: unknown): Result<string> {
   return isId(input) ? ok(input) : fail('Id inválido')
@@ -112,13 +115,7 @@ export function validateExpense(input: unknown): Result<Omit<Expense, 'id'>> {
   if (kind !== 'fixed' && kind !== 'category') return fail('Datos inválidos')
   if (!isId(id)) return fail('Elige a qué va el gasto')
   if (!isMoney(input.amount, 1)) return fail('El monto debe ser mayor a 0')
-  if (
-    typeof input.date !== 'string' ||
-    !ISO_DATE.test(input.date) ||
-    Number.isNaN(Date.parse(input.date))
-  ) {
-    return fail('Fecha inválida')
-  }
+  if (!isDate(input.date)) return fail('Fecha inválida')
   return ok({
     amount: input.amount,
     description:
@@ -128,9 +125,21 @@ export function validateExpense(input: unknown): Result<Omit<Expense, 'id'>> {
   })
 }
 
+export function validateIncome(input: unknown): Result<Omit<Income, 'id'>> {
+  if (!isObject(input)) return fail('Datos inválidos')
+  if (!isMoney(input.amount, 1)) return fail('El monto debe ser mayor a 0')
+  if (!isDate(input.date)) return fail('Fecha inválida')
+  return ok({
+    amount: input.amount,
+    description:
+      typeof input.description === 'string' ? input.description.trim() : '',
+    date: input.date,
+  })
+}
+
 export function validateOnboarding(
   input: unknown,
-): Result<Omit<FinanceData, 'expenses'>> {
+): Result<Omit<FinanceData, 'expenses' | 'incomes'>> {
   if (!isObject(input)) return fail('Datos inválidos')
   const profile = validateProfile(input.profile)
   if (!profile.ok) return profile

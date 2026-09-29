@@ -2,7 +2,13 @@ import 'server-only'
 
 import { createSessionClient } from '@/lib/supabase/server'
 import { parseISODate, type Summary } from './calc'
-import type { Category, Expense, FinanceData, FixedExpense } from './types'
+import type {
+  Category,
+  Expense,
+  FinanceData,
+  FixedExpense,
+  Income,
+} from './types'
 
 export interface FinanceState {
   data: FinanceData
@@ -16,6 +22,7 @@ interface CycleSummaryRow {
   profile: FinanceData['profile']
   investment: FinanceData['investment']
   income: number
+  extraIncome: number
   spent: number
   committed: number
   available: number
@@ -34,6 +41,7 @@ interface CycleSummaryRow {
     kind: Expense['target']['kind']
     targetId: string
   }[]
+  incomes: Income[]
 }
 
 // null = falta el onboarding.
@@ -76,6 +84,7 @@ function toState(row: CycleSummaryRow): FinanceState {
       fixed: fixed.map(f => f.fixed),
       categories: categories.map(c => c.category),
       expenses,
+      incomes: row.incomes,
     },
     summary: {
       cycle: {
@@ -83,6 +92,7 @@ function toState(row: CycleSummaryRow): FinanceState {
         end: parseISODate(row.cycle.end),
       },
       income: row.income,
+      extraIncome: row.extraIncome,
       spent: row.spent,
       committed: row.committed,
       available: row.available,
@@ -92,6 +102,7 @@ function toState(row: CycleSummaryRow): FinanceState {
         .filter(c => c.over > 0 && c.category.budget > 0)
         .sort((a, b) => b.over - a.over),
       cycleExpenses: expenses,
+      cycleIncomes: row.incomes,
       daysToPayday: row.daysToPayday,
     },
   }

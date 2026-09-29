@@ -7,6 +7,7 @@ import type { ExpenseTarget } from '@/lib/finance/types'
 import { formatMoney, formatShortDate } from '@/lib/finance/format'
 import { useFinance } from '../finance-provider'
 import { AddExpenseModal } from './add-expense-modal'
+import { AddIncomeModal } from './add-income-modal'
 import { BudgetPanel } from './budget-panel'
 import styles from './dashboard.module.css'
 import { EditModal, type EditKind } from './edit-modal'
@@ -17,7 +18,7 @@ import { Ring } from './ring'
 
 type Open =
   | { kind: 'add'; target?: ExpenseTarget }
-  | { kind: 'movements' | 'over' }
+  | { kind: 'income' | 'movements' | 'over' }
   | { kind: 'edit'; edit: EditKind }
   | null
 
@@ -99,6 +100,13 @@ export function Dashboard({ userName }: { userName: string }) {
             </Button>
             <Button
               type="button"
+              variant="ghost"
+              onClick={() => setOpen({ kind: 'income' })}
+            >
+              + Registrar ingreso
+            </Button>
+            <Button
+              type="button"
               variant="link"
               onClick={() => setOpen({ kind: 'movements' })}
             >
@@ -146,6 +154,7 @@ export function Dashboard({ userName }: { userName: string }) {
         initialTarget={open?.kind === 'add' ? open.target : undefined}
         onClose={close}
       />
+      <AddIncomeModal open={open?.kind === 'income'} onClose={close} />
       <MovementsModal open={open?.kind === 'movements'} onClose={close} />
       <OverBudgetModal open={open?.kind === 'over'} onClose={close} />
       <EditModal

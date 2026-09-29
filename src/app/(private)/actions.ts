@@ -7,6 +7,7 @@ import {
   validateExpense,
   validateFixed,
   validateId,
+  validateIncome,
   validateInvestment,
   validateOnboarding,
   validateProfile,
@@ -76,6 +77,21 @@ export async function removeExpense(id: unknown): Promise<ActionResult> {
   const parsed = validateId(id)
   if (!parsed.ok) return { error: parsed.error }
   return run(db => db.from('expenses').delete().eq('id', parsed.value))
+}
+
+export async function addIncome(input: unknown): Promise<ActionResult> {
+  const parsed = validateIncome(input)
+  if (!parsed.ok) return { error: parsed.error }
+  const { amount, description, date } = parsed.value
+  return run(db =>
+    db.from('incomes').insert({ amount, description, received_on: date }),
+  )
+}
+
+export async function removeIncome(id: unknown): Promise<ActionResult> {
+  const parsed = validateId(id)
+  if (!parsed.ok) return { error: parsed.error }
+  return run(db => db.from('incomes').delete().eq('id', parsed.value))
 }
 
 export async function toggleFixedPaid(id: unknown): Promise<ActionResult> {
