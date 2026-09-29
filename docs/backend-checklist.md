@@ -6,8 +6,8 @@ Estado del backend. Todo vive en Supabase.
 
 - [x] Migración `seed_user`: usuario en `auth.users` + `auth.identities`, email confirmado.
 - [x] Trigger `handle_new_user` crea su `profiles` con rol `user`.
-- [x] Signup off en local (`supabase/config.toml`).
-- [ ] Hosted: Auth → Providers → Email → "Allow new users" off.
+- [x] Signup on (`/register`). Local: `supabase/config.toml`.
+- [ ] Hosted: Auth → Providers → Email → "Allow new users" on.
 - [ ] Hosted: cambiar la clave temporal tras el primer deploy.
 
 ## 2. Tablas (RLS: `user_id = auth.uid()`)
@@ -33,6 +33,7 @@ Estado del backend. Todo vive en Supabase.
 - [x] `signInWithPassword` real. Mock borrado.
 - [x] `/` con `requireRole()`. Onboarding si no hay `onboarded_at`.
 - [x] `SessionTimer` (2h).
+- [x] Registro público en `/register`.
 
 ## 6. Frontend
 

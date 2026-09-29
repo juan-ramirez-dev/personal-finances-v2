@@ -3,7 +3,7 @@ import { SESSION_COOKIE } from '@/lib/auth/constants'
 
 // Chequeo rápido: solo mira si existe la cookie.
 // La seguridad real está en los guards (src/lib/auth/guards.ts).
-const PUBLIC_ROUTES = ['/login']
+const PUBLIC_ROUTES = ['/login', '/register']
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl

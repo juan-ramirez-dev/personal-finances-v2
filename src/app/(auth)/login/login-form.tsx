@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import field from '@/components/ui/field.module.css'
@@ -45,6 +46,10 @@ export function LoginForm() {
       <Button type="submit" disabled={pending}>
         {pending ? 'Entrando…' : 'Entrar'}
       </Button>
+
+      <p className={styles.switch}>
+        ¿No tienes cuenta? <Link href="/register">Crear cuenta</Link>
+      </p>
     </form>
   )
 }

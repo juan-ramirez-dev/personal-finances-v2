@@ -2,7 +2,9 @@
 
 ## Flujo
 
-1. Login (`src/app/(auth)/actions.ts`) → Supabase `signInWithPassword`.
+1. Registro (`/register`) → Supabase `signUp` con `name` en metadata (el guard lo lee del token).
+   - Si devuelve sesión → entra directo. Si pide confirmar email → mensaje.
+   - Login (`/login`) → Supabase `signInWithPassword`.
 2. Se guarda solo el `access_token` en cookie `session`:
    - httpOnly (JS del navegador no la lee)
    - `maxAge` = lo que le queda al token → vence junto con él
