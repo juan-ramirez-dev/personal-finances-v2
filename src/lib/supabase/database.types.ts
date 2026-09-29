@@ -11,9 +11,24 @@ export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: { created_at: string; id: string; role_id: number }
-        Insert: { created_at?: string; id: string; role_id: number }
-        Update: { created_at?: string; id?: string; role_id?: number }
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          role_id: number
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          role_id: number
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role_id?: number
+        }
         Relationships: [
           {
             foreignKeyName: 'profiles_role_id_fkey'

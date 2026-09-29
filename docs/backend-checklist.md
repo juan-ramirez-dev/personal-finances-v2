@@ -9,7 +9,6 @@ Esto es lo que falta para que sea real. Nada está hecho.
 - [ ] Fila en `auth.identities` para ese usuario (si no, el login con password falla).
 - [ ] El trigger `handle_new_user` ya crea su `profiles` con rol `user`. Verificar.
 - [ ] Password solo en la migración de local/seed. En hosted: crear el usuario a mano en el dashboard.
-- [ ] Desactivar signup público en Supabase (Auth → Providers → Email → "Allow new users" off).
 
 ## 2. Tablas (todas con RLS: `user_id = auth.uid()`)
 
@@ -41,9 +40,10 @@ Esto es lo que falta para que sea real. Nada está hecho.
 
 ## 5. Auth real
 
-- [ ] Volver a `signInWithPassword` en `src/app/(auth)/actions.ts` (ver template).
-- [ ] Borrar `src/lib/mock/auth.ts`.
-- [ ] Página `/` con `requireRole()` y datos leídos en el server.
+- [x] Volver a `signInWithPassword` en `src/app/(auth)/actions.ts` (ver template).
+- [x] Borrar `src/lib/mock/auth.ts`.
+- [x] Página `/` con `requireRole()` (nombre leído en el server; datos de finanzas pendientes).
+- [x] Registro público en `/register`.
 - [ ] Redirigir a onboarding si `finance_settings.onboarded_at` es null.
 - [ ] Restaurar `SessionTimer` (vence a las 2h).
 

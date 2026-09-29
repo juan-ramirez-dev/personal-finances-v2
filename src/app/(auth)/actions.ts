@@ -1,36 +1,69 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { SESSION_COOKIE } from '@/lib/auth/constants'
-import { deleteSession } from '@/lib/auth/session'
-import { checkMockCredentials, MOCK_SESSION_VALUE } from '@/lib/mock/auth'
+import { deleteSession, setSession } from '@/lib/auth/session'
+import { createAnonClient } from '@/lib/supabase/server'
+import { validateRegister } from './register/validate-register'
 
 export interface LoginState {
   error: string | null
 }
 
-// Mock: la versión real (Supabase + jose) está en el historial del template.
+export interface RegisterState {
+  error: string | null
+  notice: string | null
+}
+
 export async function login(
   _prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const email = String(formData.get('email') ?? '').trim()
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase()
   const password = String(formData.get('password') ?? '')
   if (!email || !password) return { error: 'Email y contraseña requeridos' }
-  if (!checkMockCredentials(email, password)) {
+
+  const { data, error } = await createAnonClient().auth.signInWithPassword({
+    email,
+    password,
+  })
+  if (error || !data.session?.expires_at) {
     return { error: 'Credenciales inválidas' }
   }
 
-  const store = await cookies()
-  store.set(SESSION_COOKIE, MOCK_SESSION_VALUE, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 2,
-  })
+  // Solo el access token. El refresh se descarta (ver docs/auth.md).
+  await setSession(data.session.access_token, data.session.expires_at * 1000)
+  redirect('/')
+}
 
+export async function register(
+  _prev: RegisterState,
+  formData: FormData,
+): Promise<RegisterState> {
+  const result = validateRegister(formData)
+  if (!result.ok) return { error: result.error, notice: null }
+
+  const { fullName, email, password } = result.data
+  const { data, error } = await createAnonClient().auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName } },
+  })
+  if (error) {
+    console.error('No se pudo registrar', error.message)
+    return { error: 'No se pudo crear la cuenta', notice: null }
+  }
+
+  // Sin sesión = el proyecto pide confirmar el email.
+  if (!data.session?.expires_at) {
+    return {
+      error: null,
+      notice: 'Revisa tu correo para confirmar la cuenta',
+    }
+  }
+
+  await setSession(data.session.access_token, data.session.expires_at * 1000)
   redirect('/')
 }
 
