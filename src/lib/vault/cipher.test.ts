@@ -1,34 +1,35 @@
 /**
  * @jest-environment node
  */
-import { decryptItem, encryptItem, type ItemRef } from './cipher'
+import { openField, sealField, type FieldRef } from './cipher'
 import { createDataKey } from './keys'
 
-const ref: ItemRef = {
+const ref: FieldRef = {
   userId: 'aaaaaaaa-0000-4000-8000-000000000000',
+  table: 'expenses',
   id: 'aaaaaaaa-1111-4000-8000-000000000000',
-  kind: 'expense',
+  column: 'amount',
 }
-const expense = { amount: 45000, description: 'Mercado', date: '2026-09-28' }
 
-describe('encryptItem / decryptItem', () => {
-  it('descifra el mismo objeto que se cifró', async () => {
+describe('sealField / openField', () => {
+  it('descifra el mismo valor que se cifró', async () => {
     const key = await createDataKey()
-    const sealed = await encryptItem(key, ref, expense)
-    await expect(decryptItem(key, ref, sealed)).resolves.toEqual(expense)
+    const sealed = await sealField(key, ref, 45000)
+    await expect(openField(key, ref, sealed)).resolves.toBe(45000)
   })
 
-  it('falla con otra llave', async () => {
-    const sealed = await encryptItem(await createDataKey(), ref, expense)
+  it('falla si el valor se mueve a otra columna', async () => {
+    const key = await createDataKey()
+    const sealed = await sealField(key, ref, 45000)
     await expect(
-      decryptItem(await createDataKey(), ref, sealed),
+      openField(key, { ...ref, column: 'description' }, sealed),
     ).rejects.toThrow()
   })
 
-  it('falla si el blob se mueve a otro id', async () => {
+  it('falla si el valor se mueve a otra fila', async () => {
     const key = await createDataKey()
-    const sealed = await encryptItem(key, ref, expense)
-    const moved = { ...ref, id: 'aaaaaaaa-2222-4000-8000-000000000000' }
-    await expect(decryptItem(key, moved, sealed)).rejects.toThrow()
+    const sealed = await sealField(key, ref, 45000)
+    const other = { ...ref, id: 'aaaaaaaa-2222-4000-8000-000000000000' }
+    await expect(openField(key, other, sealed)).rejects.toThrow()
   })
 })

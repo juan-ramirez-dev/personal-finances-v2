@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import field from '@/components/ui/field.module.css'
+import { login } from '@/lib/api-client/auth'
+import { errorMessage } from '@/lib/api-client/http'
 import { clearDataKey } from '@/lib/vault/key-store'
 import { deriveKeys } from '@/lib/vault/keys'
-import { login } from '../actions'
 import { unlockVault } from '../unlock-vault'
 import styles from './login.module.css'
 
@@ -30,12 +31,14 @@ export function LoginForm() {
     startTransition(async () => {
       // La contraseña real se queda aquí. Al server va solo la derivada.
       const { authPassword, masterKey } = await deriveKeys(email, password)
-      const result = await login({ email, authPassword })
-      if (!result.session) {
-        setError(result.error)
+      let session
+      try {
+        session = await login(email, authPassword)
+      } catch (failure) {
+        setError(errorMessage(failure))
         return
       }
-      const failed = await unlockVault(result.session, masterKey)
+      const failed = await unlockVault(session, masterKey)
       if (failed) {
         setError(failed)
         return

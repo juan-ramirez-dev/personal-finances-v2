@@ -1,6 +1,6 @@
 # Backend · checklist
 
-Estado del backend. Supabase guarda auth + datos cifrados. La lógica vive en el navegador.
+Estado del backend. Supabase guarda auth + tablas con columnas cifradas.
 
 ## 1. Usuarios
 
@@ -11,27 +11,36 @@ Estado del backend. Supabase guarda auth + datos cifrados. La lógica vive en el
 ## 2. Tablas (RLS dueño)
 
 - [x] `user_keys`: llave de datos envuelta. Sin update.
-- [x] `vault_items`: un registro cifrado por fila. Check de `kind` y de tamaño.
-- [x] Un `settings` por usuario (índice único parcial).
+- [x] `finance_settings`, `investments`, `fixed_expenses`, `categories`, `expenses`, `incomes`.
+- [x] Columnas sensibles con dominio `sealed` (`docs/encryption.md`).
+- [x] FKs compuestas `(id, user_id)`: nadie apunta a filas de otro usuario.
+- [x] Sin funciones SQL.
 
-## 3. Lógica (navegador)
+## 3. Endpoints (`src/app/api/`)
 
-- [x] `summarize()` en `calc.ts`: todo el panel.
-- [x] Reglas (marcar pagado, inversión como fijo, archivar) en `finance-provider.tsx`.
-- [x] Validación de negocio en `validate.ts` antes de cifrar.
+Capas por recurso en `src/lib/api/<recurso>/`: `schema` (400) → `service` (404/409/422) → `repo` (DB).
 
-## 4. Server actions (`src/app/(private)/actions.ts`)
+| Ruta                                       | Regla                                       |
+| ------------------------------------------ | ------------------------------------------- |
+| `POST /api/auth/{login,register,logout}`   | contraseña derivada; cookie httpOnly        |
+| `POST /api/auth/key`                       | llave se crea una vez                       |
+| `GET /api/finance`                         | todo lo del usuario, cifrado                |
+| `PUT /api/settings`, `POST .../complete`   | completar sin perfil 422; dos veces 409     |
+| `PUT /api/investment`                      | un fijo de inversión; sin aporte se archiva |
+| `PUT /api/fixed-expenses`                  | archiva faltantes; no toca el de inversión  |
+| `DELETE /api/fixed-expenses/[id]/payments` | borra pagos del rango                       |
+| `PUT /api/categories`                      | archiva faltantes                           |
+| `POST /api/expenses`, `DELETE [id]`        | target activo y propio                      |
+| `POST /api/incomes`, `DELETE [id]`         | fecha válida                                |
 
-- [x] `saveItems` / `deleteItems`: `authorize()` → forma (`src/lib/vault/rows.ts`) → RLS.
+## 4. Front
 
-## 5. Auth
+- [x] `src/lib/api-client/` es la única puerta a `/api`.
+- [x] `FinanceProvider`: descifra, calcula con `summarize()`, vista optimista y vuelve atrás si falla.
+- [x] Onboarding guarda paso a paso y se retoma tras recargar.
 
-- [x] Contraseña derivada en el navegador (`docs/encryption.md`).
-- [x] `/` con `requireUser()`. Onboarding si no hay `settings`.
-- [x] `SessionTimer` (2h) borra la llave.
-
-## 6. Calidad
+## 5. Calidad
 
 - [x] Tests RLS: `supabase/tests/rls.test.sql` (`supabase test db`, corre en CI).
-- [x] Tests de cifrado, llaves, diff y aislamiento (`src/lib/vault/*.test.ts`).
+- [x] Tests de cifrado, llaves, aislamiento y services.
 - [ ] Recuperar contraseña (`docs/password-recovery.md`).

@@ -1,26 +1,24 @@
 import { fromBase64, toBase64, utf8 } from './encoding'
-import type { VaultKind } from './rows'
 
-export interface ItemRef {
+// Dónde vive un valor cifrado. Va en el AAD: el valor queda amarrado a su celda.
+export interface FieldRef {
   userId: string
+  table: string
   id: string
-  kind: VaultKind
+  column: string
 }
 
-export interface Encrypted {
-  ciphertext: string
-  iv: string
-}
+// "iv.ciphertext" en base64. Mismo formato que el dominio `sealed` de la DB.
+export type Sealed = string
 
-// AAD: amarra el blob a su fila. Moverlo a otro id, kind o usuario rompe el descifrado.
-const aad = ({ userId, id, kind }: ItemRef) =>
-  utf8.encode(`${userId}:${id}:${kind}`)
+const aad = ({ userId, table, id, column }: FieldRef) =>
+  utf8.encode(`${userId}:${table}:${id}:${column}`)
 
-export async function encryptItem(
+export async function sealField(
   key: CryptoKey,
-  ref: ItemRef,
+  ref: FieldRef,
   value: unknown,
-): Promise<Encrypted> {
+): Promise<Sealed> {
   // iv nuevo en cada guardado: AES-GCM se rompe si se repite con la misma llave.
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const ciphertext = await crypto.subtle.encrypt(
@@ -28,19 +26,20 @@ export async function encryptItem(
     key,
     utf8.encode(JSON.stringify(value)),
   )
-  return { ciphertext: toBase64(ciphertext), iv: toBase64(iv) }
+  return `${toBase64(iv)}.${toBase64(ciphertext)}`
 }
 
-// Lanza si la llave o el AAD no coinciden, o si alguien tocó el blob.
-export async function decryptItem(
+// Lanza si la llave o la celda no coinciden, o si alguien tocó el valor.
+export async function openField(
   key: CryptoKey,
-  ref: ItemRef,
-  item: Encrypted,
+  ref: FieldRef,
+  sealed: Sealed,
 ): Promise<unknown> {
+  const [iv = '', ciphertext = ''] = sealed.split('.')
   const plain = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: fromBase64(item.iv), additionalData: aad(ref) },
+    { name: 'AES-GCM', iv: fromBase64(iv), additionalData: aad(ref) },
     key,
-    fromBase64(item.ciphertext),
+    fromBase64(ciphertext),
   )
   return JSON.parse(new TextDecoder().decode(plain))
 }

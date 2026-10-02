@@ -40,18 +40,20 @@ export default function PrivacyPage() {
         <div>
           <h2>Qué se cifra</h2>
           <ul>
-            <li>Ingreso mensual y día de pago</li>
-            <li>Gastos fijos y categorías</li>
-            <li>Gastos e ingresos extra: monto, descripción y fecha</li>
-            <li>Presupuestos e inversiones</li>
+            <li>Ingreso mensual</li>
+            <li>Nombres y montos de gastos fijos y categorías</li>
+            <li>Gastos e ingresos extra: monto y descripción</li>
+            <li>Presupuestos, aporte y saldo de inversiones</li>
           </ul>
         </div>
         <div>
           <h2>Qué no se cifra</h2>
           <ul>
             <li>Tu email y tu nombre (para entrar y saludarte)</li>
-            <li>El tipo de cada registro (gasto, ingreso, categoría…)</li>
-            <li>Cuándo se creó o cambió cada registro</li>
+            <li>Fechas de gastos e ingresos, y tus días de pago</li>
+            <li>Qué gasto va a qué categoría o gasto fijo</li>
+            <li>Si tienes inversiones (no cuánto)</li>
+            <li>Cuándo se creó o borró cada registro</li>
           </ul>
         </div>
       </section>

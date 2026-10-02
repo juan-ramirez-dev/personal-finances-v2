@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { logout } from '@/app/(auth)/actions'
 import { Button } from '@/components/ui/button'
 import type { ExpenseTarget } from '@/lib/finance/types'
 import { formatMoney, formatShortDate } from '@/lib/finance/format'
+import { logout } from '@/lib/api-client/auth'
 import { clearDataKey } from '@/lib/vault/key-store'
 import { useFinance } from '../finance-provider'
 import { AddExpenseModal } from './add-expense-modal'
@@ -59,7 +59,9 @@ export function Dashboard({ userName }: { userName: string }) {
           <form
             action={async () => {
               await clearDataKey()
-              await logout()
+              // Si el server no responde igual se sale: la llave ya no está.
+              await logout().catch(() => null)
+              window.location.replace('/login')
             }}
           >
             <button type="submit">Salir</button>

@@ -3,10 +3,10 @@
 ## Flujo
 
 1. El navegador deriva `authPassword` de la contraseña (`docs/encryption.md`). La real nunca sale.
-   - Registro (`/register`) → Supabase `signUp` con `authPassword` y `name` en metadata.
+   - Registro → `POST /api/auth/register` → Supabase `signUp` con `authPassword` y `name` en metadata.
    - Si devuelve sesión → entra directo. Si pide confirmar email → mensaje.
-   - Login (`/login`) → Supabase `signInWithPassword` con `authPassword`.
-   - El action devuelve la llave envuelta. El navegador la abre y redirige.
+   - Login → `POST /api/auth/login` → Supabase `signInWithPassword` con `authPassword`.
+   - El endpoint devuelve la llave envuelta. El navegador la abre y redirige.
 2. Se guarda solo el `access_token` en cookie `session`:
    - httpOnly (JS del navegador no la lee)
    - `maxAge` = lo que le queda al token → vence junto con él
@@ -28,8 +28,10 @@
 
 Sin roles ni admin. Todos los usuarios son iguales y cada uno solo ve lo suyo (RLS).
 
-| Función         | Uso           | Si falla          |
-| --------------- | ------------- | ----------------- |
-| `withAuth(fn)`  | Route Handler | 401 JSON          |
-| `authorize()`   | Server Action | lanza `AuthError` |
-| `requireUser()` | Página        | redirige a login  |
+| Función         | Uso      | Si falla                  |
+| --------------- | -------- | ------------------------- |
+| `authed(fn)`    | Endpoint | 401 JSON (usa `withAuth`) |
+| `authorize()`   | Interno  | lanza `AuthError`         |
+| `requireUser()` | Página   | redirige a login          |
+
+`authed` vive en `src/lib/api/http.ts`: agrega el cliente de DB con el token y traduce `ApiError` a JSON.

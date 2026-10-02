@@ -18,6 +18,8 @@ export function createAnonClient() {
   )
 }
 
+export type Db = ReturnType<typeof createUserClient>
+
 // Consultas como el usuario: RLS aplica con su token.
 export function createUserClient(accessToken: string) {
   return createClient<Database>(env.supabaseUrl, env.supabasePublishableKey, {

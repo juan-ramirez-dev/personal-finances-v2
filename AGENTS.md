@@ -97,7 +97,14 @@ Guía completa: `docs/testing.md`. Agente: `test-planner`.
 - Estructura:
   - `src/app/` → rutas. Componentes de un solo uso viven junto a su ruta.
   - `src/components/ui/` → componentes reusados en toda la app.
-  - `src/lib/` → lógica de servidor (auth, supabase, env).
+  - `src/app/api/<recurso>/route.ts` → endpoints. Solo HTTP: `authed` + parse + service.
+  - `src/lib/api/<recurso>/` → backend por recurso:
+    - `schema.ts` → forma del input (400). Tipos que comparten front y back.
+    - `service.ts` → reglas de negocio (404/409/422).
+    - `repo.ts` → Supabase. Único lugar que toca la DB.
+  - `src/lib/api-client/` → único lugar del front que llama a `/api`. Cifra al enviar, descifra al recibir.
+  - `src/lib/integrations/` → servicios externos (ej. OpenAI). Los llaman los services.
+  - `src/lib/` → resto de lógica compartida (auth, vault, finance, env).
 - Archivos en **kebab-case** (`mi-componente.tsx`). Lint lo bloquea.
 - Sin barrels (`index.ts` que solo re-exporta).
 
@@ -111,15 +118,15 @@ Detalle: `docs/auth.md`, `docs/encryption.md`.
 
 Usar siempre los guards de `src/lib/auth/guards.ts`. No crear lógica de permisos propia.
 
-| Dónde         | Cómo                                                  |
-| ------------- | ----------------------------------------------------- |
-| Route Handler | `export const GET = withAuth(async (user, req) => …)` |
-| Server Action | `const user = await authorize()` al inicio            |
-| Página        | `const user = await requireUser()`                    |
+| Dónde    | Cómo                                                        |
+| -------- | ----------------------------------------------------------- |
+| Endpoint | `export const GET = authed(async ({ user, db }, req) => …)` |
+| Página   | `const user = await requireUser()`                          |
 
 - `proxy.ts` solo redirige rápido. **No es seguridad.** La seguridad está en los guards.
 - Sin roles ni admin. Cada usuario solo lee y escribe lo suyo (RLS).
-- Datos de finanzas: solo en `vault_items`, cifrados. Nunca columnas en claro.
+- Sin server actions: el front habla con el backend por `/api` (`src/lib/api-client/`).
+- Columnas sensibles (montos, nombres, descripciones) van cifradas: tipo `sealed` en la DB. Nunca en claro.
 - Nunca exponer `SUPABASE_SERVICE_ROLE_KEY` al cliente.
 
 ---

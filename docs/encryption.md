@@ -1,7 +1,7 @@
 # Cifrado E2E
 
-Todo se cifra en el navegador. Postgres guarda solo texto cifrado.
-Ni el servidor ni quien tenga acceso a la DB puede leer los datos.
+Lo sensible se cifra en el navegador. Postgres guarda tablas normales con esas columnas cifradas.
+Ni el servidor ni quien tenga acceso a la DB puede leer montos, nombres ni descripciones.
 
 ## Llaves
 
@@ -9,7 +9,7 @@ Ni el servidor ni quien tenga acceso a la DB puede leer los datos.
 | -------------- | -------------------------- | -------------------------- | -------------------------------------------- |
 | `authPassword` | `HKDF(base, "auth")`       | Contraseña para Supabase   | Se envía en login/registro                   |
 | `masterKey`    | `HKDF(base, "enc")`        | Envolver / abrir `dataKey` | Memoria, solo durante el login               |
-| `dataKey`      | Al azar en el primer login | Cifrar cada registro       | `user_keys` (envuelta) + IndexedDB (abierta) |
+| `dataKey`      | Al azar en el primer login | Cifrar cada campo          | `user_keys` (envuelta) + IndexedDB (abierta) |
 
 - `base = PBKDF2-SHA256(password, salt = email normalizado, 600_000)`.
 - HKDF es de una vía: con `authPassword` no se llega a `masterKey`.
@@ -18,29 +18,44 @@ Ni el servidor ni quien tenga acceso a la DB puede leer los datos.
 
 Código: `src/lib/vault/`.
 
-## Tablas
+## Qué se cifra
 
-- `user_keys(user_id, wrapped_key, iv, kdf_iterations)`. Sin update: llega con recuperación.
-- `vault_items(id, user_id, kind, ciphertext, iv, created_at, updated_at)`.
-  - `kind`: `settings`, `fixed`, `category`, `expense`, `income`.
-  - Un `settings` por usuario = onboarding completo.
-- RLS dueño en las dos.
+| Tabla              | Cifrado (`sealed`)                      | En claro                                      |
+| ------------------ | --------------------------------------- | --------------------------------------------- |
+| `finance_settings` | `monthly_income`                        | `payday`, `onboarded_at`                      |
+| `investments`      | `monthly_contribution`, `total_balance` | `has_investments`                             |
+| `fixed_expenses`   | `name`, `amount`                        | `due_day`, `is_investment`, `archived_at`     |
+| `categories`       | `name`, `budget`                        | `archived_at`                                 |
+| `expenses`         | `amount`, `description`                 | `spent_on`, `fixed_expense_id`, `category_id` |
+| `incomes`          | `amount`, `description`                 | `received_on`                                 |
 
-## Cifrado de un registro
+Ids, `user_id` y `created_at` siempre en claro.
 
+## Formato de un campo
+
+- Dominio `sealed`: texto `iv.ciphertext` en base64, máx. 4096.
 - AES-GCM 256, `iv` nuevo en cada guardado.
-- AAD = `user_id:id:kind`. Mover el blob a otra fila o usuario rompe el descifrado.
-- Fijo/categoría borrado = `archivedAt` dentro del blob. Gastos viejos siguen apuntando.
+- AAD = `user_id:tabla:id:columna`. Mover un valor a otra celda, fila o usuario rompe el descifrado.
+- Settings e investments usan `user_id` como `id`.
+- Los ids los genera el cliente: los necesita para el AAD antes de cifrar.
+- El valor va como JSON: `45000` y `"Mercado"` se distinguen al abrir.
+
+## Quién hace qué
+
+- `src/lib/api-client/` cifra al enviar y descifra al recibir. Ningún componente cifra a mano.
+- El backend (`src/lib/api/`) valida forma y reglas que no necesitan valores: dueño, FKs, archivados, fechas.
+- Lo que sí necesita valores (monto > 0, nombre único, totales) corre en el navegador (`validate.ts`, `calc.ts`).
 
 ## Flujos
 
-1. Login/registro: navegador deriva → server recibe `authPassword` → devuelve `wrappedKey` → navegador la abre (o la crea) → IndexedDB.
-2. `/`: server manda filas cifradas → `FinanceProvider` descifra → `summarize()`.
-3. Cambio: `validate.ts` → `diffItems` → cifra lo cambiado → `saveItems` / `deleteItems`.
+1. Login/registro: navegador deriva → `/api/auth/*` recibe `authPassword` → devuelve `wrappedKey` → navegador la abre (o la crea) → IndexedDB.
+2. Panel: `GET /api/finance` → filas con campos cifrados → `FinanceProvider` descifra → `summarize()`.
+3. Cambio: `validate.ts` → api-client cifra → endpoint → service → repo.
 4. Salida: la llave se borra (logout, `SessionTimer`, y siempre al abrir `/login`).
 
-## Qué no se cifra
+## Qué ve el servidor
 
-- Email y nombre (auth). Tipo de registro. Fechas de sistema.
+- Email y nombre (auth), fechas, días de pago, relaciones entre filas, si tienes inversiones.
+- El largo del texto cifrado (aceptado: no se rellena).
 
 Riesgos y recuperación: `docs/password-recovery.md`.

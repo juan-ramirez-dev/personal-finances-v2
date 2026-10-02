@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { decryptItem, encryptItem } from './cipher'
+import { openField, sealField, type FieldRef } from './cipher'
 import { createDataKey, deriveKeys, unwrapDataKey, wrapDataKey } from './keys'
 
 jest.setTimeout(30_000)
@@ -10,14 +10,18 @@ jest.setTimeout(30_000)
 const A = 'aaaaaaaa-0000-4000-8000-000000000000'
 const B = 'bbbbbbbb-0000-4000-8000-000000000000'
 const ITEM = 'aaaaaaaa-1111-4000-8000-000000000000'
-const expense = { amount: 45000, description: 'Mercado', date: '2026-09-28' }
+const cell = (userId: string): FieldRef => ({
+  userId,
+  table: 'expenses',
+  id: ITEM,
+  column: 'amount',
+})
 
 describe('aislamiento entre usuarios', () => {
   it('B con su llave no descifra un registro de A', async () => {
-    const ref = { userId: A, id: ITEM, kind: 'expense' as const }
-    const sealed = await encryptItem(await createDataKey(), ref, expense)
+    const sealed = await sealField(await createDataKey(), cell(A), 45000)
     await expect(
-      decryptItem(await createDataKey(), ref, sealed),
+      openField(await createDataKey(), cell(A), sealed),
     ).rejects.toThrow()
   })
 
@@ -31,14 +35,8 @@ describe('aislamiento entre usuarios', () => {
   it('un blob de A copiado a una fila de B no descifra', async () => {
     // Peor caso: misma llave. Solo el AAD (user_id) lo frena.
     const key = await createDataKey()
-    const sealed = await encryptItem(
-      key,
-      { userId: A, id: ITEM, kind: 'expense' },
-      expense,
-    )
-    await expect(
-      decryptItem(key, { userId: B, id: ITEM, kind: 'expense' }, sealed),
-    ).rejects.toThrow()
+    const sealed = await sealField(key, cell(A), 45000)
+    await expect(openField(key, cell(B), sealed)).rejects.toThrow()
   })
 
   it('misma contraseña con otro email da llaves distintas', async () => {

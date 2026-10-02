@@ -1,6 +1,7 @@
+import type { VaultSession } from '@/lib/api/auth/schema'
+import { saveUserKey } from '@/lib/api-client/auth'
 import { saveDataKey } from '@/lib/vault/key-store'
 import { createDataKey, unwrapDataKey, wrapDataKey } from '@/lib/vault/keys'
-import { saveUserKey, type VaultSession } from './actions'
 
 // Abre la dataKey (o la crea en el primer login) y la deja en IndexedDB.
 // Devuelve el error a mostrar, o null si quedó lista.
@@ -12,9 +13,8 @@ export async function unlockVault(
     let wrapped = session.wrappedKey
     if (!wrapped) {
       const fresh = await wrapDataKey(await createDataKey(), masterKey)
-      const saved = await saveUserKey(fresh)
-      if (saved.error) return saved.error
-      wrapped = saved.existing ?? fresh
+      const { existing } = await saveUserKey(fresh)
+      wrapped = existing ?? fresh
     }
     // Se re-abre como no exportable: la extraíble solo existió para envolverla.
     const key = await unwrapDataKey(wrapped, masterKey)

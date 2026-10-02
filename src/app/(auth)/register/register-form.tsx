@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import field from '@/components/ui/field.module.css'
+import { register } from '@/lib/api-client/auth'
+import { errorMessage } from '@/lib/api-client/http'
 import { clearDataKey } from '@/lib/vault/key-store'
 import { deriveKeys } from '@/lib/vault/keys'
-import { register } from '../actions'
 import styles from '../login/login.module.css'
 import { unlockVault } from '../unlock-vault'
 import { MIN_PASSWORD_LENGTH, validateRegister } from './validate-register'
@@ -35,14 +36,16 @@ export function RegisterForm() {
 
     startTransition(async () => {
       const { authPassword, masterKey } = await deriveKeys(email, password)
-      const result = await register({ fullName, email, authPassword })
-      if (result.error) {
-        setError(result.error)
+      let result
+      try {
+        result = await register(fullName, email, authPassword)
+      } catch (failure) {
+        setError(errorMessage(failure))
         return
       }
       setError(null)
       if (!result.session) {
-        if ('notice' in result) setNotice(result.notice)
+        setNotice(result.notice)
         return
       }
       const failed = await unlockVault(result.session, masterKey)
