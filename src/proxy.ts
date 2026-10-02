@@ -4,9 +4,14 @@ import { SESSION_COOKIE } from '@/lib/auth/constants'
 // Chequeo rápido: solo mira si existe la cookie.
 // La seguridad real está en los guards (src/lib/auth/guards.ts).
 const PUBLIC_ROUTES = ['/login', '/register']
+// Abren con y sin sesión: no redirigen nunca.
+const OPEN_ROUTES = ['/privacy']
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+  if (OPEN_ROUTES.includes(pathname)) return NextResponse.next()
+  // Solo navegaciones. Un server action (POST) en /login sigue tras crear la cookie.
+  if (request.method !== 'GET') return NextResponse.next()
   const hasSession = request.cookies.has(SESSION_COOKIE)
   const isPublic = PUBLIC_ROUTES.includes(pathname)
 

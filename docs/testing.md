@@ -27,8 +27,8 @@ Jest + Testing Library. Correr: `pnpm test`.
 - Archivo junto al código: `guards.ts` → `guards.test.ts`.
 - Un test = un comportamiento.
 - Nombre en español que diga el resultado esperado:
-  - ✅ `responde 403 si el rol no está permitido`
-  - ❌ `test withRoles case 2`
+  - ✅ `responde 401 si no hay sesión`
+  - ❌ `test withAuth case 2`
 - Sin lógica dentro del test (sin `if`, sin loops).
 - Mocks solo en el borde: DB, red, cookies.
 
@@ -37,17 +37,14 @@ Jest + Testing Library. Correr: `pnpm test`.
 ```ts
 import { authorize } from './guards'
 import { getSession } from './session'
-import { getUserRole } from './roles'
 
 jest.mock('./session')
-jest.mock('./roles')
 
-it('lanza 403 si el rol no está permitido', async () => {
-  jest.mocked(getSession).mockResolvedValue(fakeSession)
-  jest.mocked(getUserRole).mockResolvedValue('user')
+it('lanza 401 si no hay sesión', async () => {
+  jest.mocked(getSession).mockResolvedValue(null)
 
-  await expect(authorize(['admin'])).rejects.toMatchObject({ status: 403 })
+  await expect(authorize()).rejects.toMatchObject({ status: 401 })
 })
 ```
 
-> Código de servidor (`src/lib/**`): agrega `/** @jest-environment node */` al inicio del archivo.
+> Código de servidor o con Web Crypto (`src/lib/**`): agrega `/** @jest-environment node */` al inicio del archivo. jsdom no trae `crypto.subtle`.

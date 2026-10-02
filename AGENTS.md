@@ -106,18 +106,20 @@ Guía completa: `docs/testing.md`. Agente: `test-planner`.
 ## 5. Auth y guards
 
 Flujo: login → token de Supabase en cookie httpOnly → vence en 2h → login otra vez. Sin refresh.
-Detalle: `docs/auth.md`.
+Datos cifrados en el navegador (E2E). El servidor nunca ve datos en claro ni la contraseña real.
+Detalle: `docs/auth.md`, `docs/encryption.md`.
 
 Usar siempre los guards de `src/lib/auth/guards.ts`. No crear lógica de permisos propia.
 
-| Dónde         | Cómo                                                              |
-| ------------- | ----------------------------------------------------------------- |
-| Route Handler | `export const GET = withRoles(['admin'], async (user, req) => …)` |
-| Server Action | `const user = await authorize(['admin'])` al inicio               |
-| Página        | `const user = await requireRole(['admin'])`                       |
+| Dónde         | Cómo                                                  |
+| ------------- | ----------------------------------------------------- |
+| Route Handler | `export const GET = withAuth(async (user, req) => …)` |
+| Server Action | `const user = await authorize()` al inicio            |
+| Página        | `const user = await requireUser()`                    |
 
 - `proxy.ts` solo redirige rápido. **No es seguridad.** La seguridad está en los guards.
-- El rol se lee de DB en cada request (`profiles → roles.role_slug`).
+- Sin roles ni admin. Cada usuario solo lee y escribe lo suyo (RLS).
+- Datos de finanzas: solo en `vault_items`, cifrados. Nunca columnas en claro.
 - Nunca exponer `SUPABASE_SERVICE_ROLE_KEY` al cliente.
 
 ---

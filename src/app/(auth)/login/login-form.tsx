@@ -1,19 +1,51 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import field from '@/components/ui/field.module.css'
-import { login, type LoginState } from '../actions'
+import { clearDataKey } from '@/lib/vault/key-store'
+import { deriveKeys } from '@/lib/vault/keys'
+import { login } from '../actions'
+import { unlockVault } from '../unlock-vault'
 import styles from './login.module.css'
 
-const initialState: LoginState = { error: null }
-
 export function LoginForm() {
-  const [state, action, pending] = useActionState(login, initialState)
+  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  // Toda salida (logout, sesión vencida) termina aquí: la llave vieja no debe quedar.
+  useEffect(() => {
+    void clearDataKey()
+  }, [])
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const email = String(form.get('email') ?? '')
+    const password = String(form.get('password') ?? '')
+
+    startTransition(async () => {
+      // La contraseña real se queda aquí. Al server va solo la derivada.
+      const { authPassword, masterKey } = await deriveKeys(email, password)
+      const result = await login({ email, authPassword })
+      if (!result.session) {
+        setError(result.error)
+        return
+      }
+      const failed = await unlockVault(result.session, masterKey)
+      if (failed) {
+        setError(failed)
+        return
+      }
+      router.replace('/')
+    })
+  }
 
   return (
-    <form action={action} className={styles.form}>
+    <form onSubmit={onSubmit} className={styles.form}>
       <div>
         <p className={styles.eyebrow}>Acceso</p>
         <h2 className={styles.title}>Bienvenido</h2>
@@ -41,7 +73,7 @@ export function LoginForm() {
         />
       </label>
 
-      {state.error && <p className={styles.error}>{state.error}</p>}
+      {error && <p className={styles.error}>{error}</p>}
 
       <Button type="submit" disabled={pending}>
         {pending ? 'Entrando…' : 'Entrar'}
@@ -49,6 +81,8 @@ export function LoginForm() {
 
       <p className={styles.switch}>
         ¿No tienes cuenta? <Link href="/register">Crear cuenta</Link>
+        <br />
+        <Link href="/privacy">Privacidad</Link>
       </p>
     </form>
   )

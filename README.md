@@ -5,9 +5,8 @@ Basado en `next-supabase-template`.
 
 ## Estado
 
-- Datos en Supabase. Sin registro: un solo usuario creado por migración.
-- Usuario: `juan@finanzas.co` · clave temporal: `finanzas123`.
-  - En hosted: cambiarla en el dashboard tras el primer deploy.
+- Registro público en `/register`. Sin admin: cada usuario ve solo lo suyo.
+- Datos cifrados en el navegador (E2E). El servidor guarda solo texto cifrado. Ver `/privacy`.
 - Checklist del backend: `docs/backend-checklist.md`.
 
 ## Arrancar
@@ -42,4 +41,6 @@ DB local: `pnpm db:start` → `pnpm db:reset`. Tests de RLS: `supabase test db`.
 - `AGENTS.md` → reglas (humanos y agentes)
 - `docs/backend-checklist.md` → lo que falta en backend
 - `docs/auth.md` → sesión y guards
+- `docs/encryption.md` → cifrado E2E
+- `docs/password-recovery.md` → recuperar contraseña (pendiente)
 - `docs/css.md` → tokens y estilos

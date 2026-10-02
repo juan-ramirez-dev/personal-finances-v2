@@ -115,3 +115,17 @@
     padding: var(--space-8) var(--space-6);
   }
 }
+
+.privacy {
+  margin: 0;
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-primary-soft);
+  border-left: 2px solid var(--color-primary);
+}
+
+.privacy a {
+  color: var(--color-primary);
+}

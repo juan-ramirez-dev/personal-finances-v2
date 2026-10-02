@@ -1,18 +1,7 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { AuthError, authorize } from '@/lib/auth/guards'
-import {
-  validateCategories,
-  validateExpense,
-  validateFixed,
-  validateId,
-  validateIncome,
-  validateInvestment,
-  validateOnboarding,
-  validateProfile,
-} from '@/lib/finance/validate'
-import type { Json } from '@/lib/supabase/database.types'
+import { validateIds, validateRows } from '@/lib/vault/rows'
 import { createSessionClient } from '@/lib/supabase/server'
 
 export interface ActionResult {
@@ -24,9 +13,6 @@ type Write = (
   db: Db,
   userId: string,
 ) => PromiseLike<{ error: { message: string } | null }>
-
-// Las interfaces no encajan en el tipo Json de Supabase, aunque ya son JSON válido.
-const json = (value: object) => value as Json
 
 async function run(write: Write): Promise<ActionResult> {
   let userId: string
@@ -44,88 +30,27 @@ async function run(write: Write): Promise<ActionResult> {
     console.error('Error guardando finanzas', error.message)
     return { error: 'No se pudo guardar. Intenta de nuevo.' }
   }
-  revalidatePath('/')
   return { error: null }
 }
 
-// Los inputs se tipan como unknown: vienen de la red, se validan aquí.
+// El contenido llega cifrado: aquí solo se valida la forma.
+// Las reglas de negocio corren en el navegador antes de cifrar (validate.ts).
 
-export async function completeOnboarding(
-  input: unknown,
-): Promise<ActionResult> {
-  const parsed = validateOnboarding(input)
+export async function saveItems(input: unknown): Promise<ActionResult> {
+  const parsed = validateRows(input)
   if (!parsed.ok) return { error: parsed.error }
-  return run(db => db.rpc('complete_onboarding', { p: json(parsed.value) }))
-}
-
-export async function addExpense(input: unknown): Promise<ActionResult> {
-  const parsed = validateExpense(input)
-  if (!parsed.ok) return { error: parsed.error }
-  const { amount, description, date, target } = parsed.value
-  return run(db =>
-    db.from('expenses').insert({
-      amount,
-      description,
-      spent_on: date,
-      fixed_expense_id: target.kind === 'fixed' ? target.id : null,
-      category_id: target.kind === 'category' ? target.id : null,
-    }),
-  )
-}
-
-export async function removeExpense(id: unknown): Promise<ActionResult> {
-  const parsed = validateId(id)
-  if (!parsed.ok) return { error: parsed.error }
-  return run(db => db.from('expenses').delete().eq('id', parsed.value))
-}
-
-export async function addIncome(input: unknown): Promise<ActionResult> {
-  const parsed = validateIncome(input)
-  if (!parsed.ok) return { error: parsed.error }
-  const { amount, description, date } = parsed.value
-  return run(db =>
-    db.from('incomes').insert({ amount, description, received_on: date }),
-  )
-}
-
-export async function removeIncome(id: unknown): Promise<ActionResult> {
-  const parsed = validateId(id)
-  if (!parsed.ok) return { error: parsed.error }
-  return run(db => db.from('incomes').delete().eq('id', parsed.value))
-}
-
-export async function toggleFixedPaid(id: unknown): Promise<ActionResult> {
-  const parsed = validateId(id)
-  if (!parsed.ok) return { error: parsed.error }
-  return run(db => db.rpc('toggle_fixed_paid', { p_fixed_id: parsed.value }))
-}
-
-export async function saveFixed(input: unknown): Promise<ActionResult> {
-  const parsed = validateFixed(input)
-  if (!parsed.ok) return { error: parsed.error }
-  return run(db => db.rpc('save_fixed', { p: json(parsed.value) }))
-}
-
-export async function saveCategories(input: unknown): Promise<ActionResult> {
-  const parsed = validateCategories(input)
-  if (!parsed.ok) return { error: parsed.error }
-  return run(db => db.rpc('save_categories', { p: json(parsed.value) }))
-}
-
-export async function saveProfile(input: unknown): Promise<ActionResult> {
-  const parsed = validateProfile(input)
-  if (!parsed.ok) return { error: parsed.error }
-  const { monthlyIncome, payday } = parsed.value
+  if (parsed.value.length === 0) return { error: null }
+  // user_id sale de la sesión, nunca del cliente. RLS bloquea pisar filas ajenas.
   return run((db, userId) =>
     db
-      .from('finance_settings')
-      .update({ monthly_income: monthlyIncome, payday })
-      .eq('user_id', userId),
+      .from('vault_items')
+      .upsert(parsed.value.map(row => ({ ...row, user_id: userId }))),
   )
 }
 
-export async function saveInvestment(input: unknown): Promise<ActionResult> {
-  const parsed = validateInvestment(input)
+export async function deleteItems(ids: unknown): Promise<ActionResult> {
+  const parsed = validateIds(ids)
   if (!parsed.ok) return { error: parsed.error }
-  return run(db => db.rpc('save_investment', { p: json(parsed.value) }))
+  if (parsed.value.length === 0) return { error: null }
+  return run(db => db.from('vault_items').delete().in('id', parsed.value))
 }

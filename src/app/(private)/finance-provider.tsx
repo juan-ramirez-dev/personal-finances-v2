@@ -1,13 +1,12 @@
 'use client'
 
-import { createContext, useContext, useOptimistic, useTransition } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import {
   summarize,
   syncInvestmentFixed,
   toISODate,
   type Summary,
 } from '@/lib/finance/calc'
-import type { FinanceState } from '@/lib/finance/queries'
 import type {
   Category,
   Expense,
@@ -18,23 +17,31 @@ import type {
   Investment,
 } from '@/lib/finance/types'
 import {
-  addExpense,
-  addIncome,
-  completeOnboarding,
-  removeExpense,
-  removeIncome,
-  saveCategories,
-  saveFixed,
-  saveInvestment,
-  saveProfile,
-  toggleFixedPaid,
-  type ActionResult,
-} from './actions'
+  validateCategories,
+  validateExpense,
+  validateFixed,
+  validateIncome,
+  validateInvestment,
+  validateOnboarding,
+  validateProfile,
+} from '@/lib/finance/validate'
+import {
+  decryptRows,
+  diffItems,
+  encryptDocs,
+  fromItems,
+  type VaultDoc,
+} from '@/lib/vault/items'
+import { clearDataKey, loadDataKey } from '@/lib/vault/key-store'
+import type { VaultRow } from '@/lib/vault/rows'
+import { deleteItems, saveItems } from './actions'
 
 // Cada acción devuelve el error a mostrar, o null si se guardó.
 type Run = Promise<string | null>
 
 interface FinanceContextValue {
+  // false mientras se descifra. Evita mostrar el onboarding a quien ya tiene datos.
+  ready: boolean
   data: FinanceData | null
   summary: Summary | null
   complete: (data: Omit<FinanceData, 'expenses' | 'incomes'>) => Run
@@ -49,7 +56,13 @@ interface FinanceContextValue {
   setInvestment: (investment: Investment) => Run
 }
 
-type Update = (d: FinanceData) => FinanceData
+interface Vault {
+  docs: VaultDoc[] // incluye archivados: base del próximo diff
+  data: FinanceData | null
+}
+
+// Devuelve los datos nuevos, o el error de validación a mostrar.
+type Update = (d: FinanceData | null) => FinanceData | string
 
 const FinanceContext = createContext<FinanceContextValue | null>(null)
 
@@ -58,11 +71,10 @@ export function newId() {
 }
 
 // Marcar pagado = registrar lo que falta. Desmarcar = borrar sus pagos del ciclo.
-// Solo para la vista optimista: la regla real vive en toggle_fixed_paid (SQL).
-function togglePaid(d: FinanceData, id: string): FinanceData {
+function togglePaid(d: FinanceData, id: string): FinanceData | string {
   const summary = summarize(d, new Date())
   const status = summary.fixed.find(f => f.fixed.id === id)
-  if (!status) return d
+  if (!status) return 'Gasto fijo no encontrado'
   if (!status.isPaid) {
     const payment: Expense = {
       id: newId(),
@@ -87,93 +99,177 @@ function togglePaid(d: FinanceData, id: string): FinanceData {
   }
 }
 
+// El fijo de inversión lo maneja inversiones: aquí solo cambia su día.
+function withInvestmentFixed(
+  incoming: FixedExpense[],
+  current: FixedExpense[],
+  investment: Investment,
+) {
+  const kept = current.find(f => f.isInvestment)
+  const list =
+    kept && !incoming.some(f => f.isInvestment) ? [...incoming, kept] : incoming
+  return syncInvestmentFixed(list, investment)
+}
+
+const targetExists = (d: FinanceData, target: Expense['target']) =>
+  target.kind === 'fixed'
+    ? d.fixed.some(f => f.id === target.id)
+    : d.categories.some(c => c.id === target.id)
+
+// Sin llave no hay cómo leer: se cierra la sesión y se vuelve a entrar.
+function leave() {
+  void clearDataKey().then(() =>
+    window.location.replace('/api/auth/clear-session'),
+  )
+}
+
 export function FinanceProvider({
-  initial,
+  rows,
+  userId,
   children,
 }: {
-  initial: FinanceState | null
+  rows: VaultRow[]
+  userId: string
   children: React.ReactNode
 }) {
-  const [data, applyOptimistic] = useOptimistic(
-    initial?.data ?? null,
-    (d: FinanceData | null, update: Update) => (d ? update(d) : d),
-  )
-  const [, startTransition] = useTransition()
+  const [vault, setVault] = useState<Vault | null>(null)
+  // Refs: las acciones van en cola y cada una parte del estado que dejó la anterior.
+  const latest = useRef<Vault | null>(null)
+  const key = useRef<CryptoKey | null>(null)
+  const queue = useRef<Promise<unknown>>(Promise.resolve())
 
-  // El cambio se ve al instante; al terminar llega el dato real del server.
-  const run = (update: Update | null, action: () => Promise<ActionResult>) =>
-    new Promise<string | null>(resolve => {
-      startTransition(async () => {
-        if (update) applyOptimistic(update)
-        try {
-          resolve((await action()).error)
-        } catch {
-          resolve('No se pudo conectar. Intenta de nuevo.')
-        }
-      })
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const dataKey = await loadDataKey(userId)
+      if (!dataKey) return leave()
+      let docs: VaultDoc[]
+      try {
+        docs = await decryptRows(dataKey, userId, rows)
+      } catch (error) {
+        console.error('No se pudieron descifrar los datos', error)
+        return leave()
+      }
+      if (cancelled) return
+      key.current = dataKey
+      latest.current = { docs, data: fromItems(docs) }
+      setVault(latest.current)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [rows, userId])
+
+  const show = (next: Vault) => {
+    latest.current = next
+    setVault(next)
+  }
+
+  // El cambio se ve al instante. Si el server falla, se vuelve atrás.
+  const run = (update: Update): Run => {
+    const task = queue.current.then(async (): Run => {
+      const current = latest.current
+      if (!current || !key.current) return 'Tus datos aún no cargan.'
+      const next = update(current.data)
+      if (typeof next === 'string') return next
+
+      const diff = diffItems(current.docs, next, new Date())
+      show({ docs: diff.docs, data: next })
+      try {
+        const saved = await saveItems(
+          await encryptDocs(key.current, userId, diff.save),
+        )
+        const error = saved.error ?? (await deleteItems(diff.remove)).error
+        if (error) show(current)
+        return error
+      } catch {
+        show(current)
+        return 'No se pudo conectar. Intenta de nuevo.'
+      }
     })
+    queue.current = task.catch(() => null)
+    return task
+  }
 
-  // Sin cambios pendientes se usa el resumen del server (fuente de verdad).
-  const summary =
-    !data || !initial
-      ? null
-      : data === initial.data
-        ? initial.summary
-        : summarize(data, new Date())
+  const edit = (update: (d: FinanceData) => FinanceData | string) =>
+    run(d => (d ? update(d) : 'Primero completa tu perfil'))
+
+  const data = vault?.data ?? null
 
   const value: FinanceContextValue = {
+    ready: vault !== null,
     data,
-    summary,
-    complete: d => run(null, () => completeOnboarding(d)),
+    summary: data ? summarize(data, new Date()) : null,
+    complete: input =>
+      run(d => {
+        if (d) return 'El onboarding ya está completo'
+        const parsed = validateOnboarding(input)
+        if (!parsed.ok) return parsed.error
+        const { fixed, investment } = parsed.value
+        return {
+          ...parsed.value,
+          fixed: withInvestmentFixed(fixed, [], investment),
+          expenses: [],
+          incomes: [],
+        }
+      }),
     addExpense: expense =>
-      run(
-        d => ({ ...d, expenses: [...d.expenses, { ...expense, id: newId() }] }),
-        () => addExpense(expense),
-      ),
-    removeExpense: id =>
-      run(
-        d => ({ ...d, expenses: d.expenses.filter(e => e.id !== id) }),
-        () => removeExpense(id),
-      ),
-    addIncome: income =>
-      run(
-        d => ({ ...d, incomes: [...d.incomes, { ...income, id: newId() }] }),
-        () => addIncome(income),
-      ),
-    removeIncome: id =>
-      run(
-        d => ({ ...d, incomes: d.incomes.filter(i => i.id !== id) }),
-        () => removeIncome(id),
-      ),
-    toggleFixedPaid: id =>
-      run(
-        d => togglePaid(d, id),
-        () => toggleFixedPaid(id),
-      ),
-    setFixed: fixed =>
-      run(
-        d => ({ ...d, fixed }),
-        () => saveFixed(fixed),
-      ),
-    setCategories: categories =>
-      run(
-        d => ({ ...d, categories }),
-        () => saveCategories(categories),
-      ),
-    setProfile: profile =>
-      run(
-        d => ({ ...d, profile }),
-        () => saveProfile(profile),
-      ),
-    setInvestment: investment =>
-      run(
-        d => ({
+      edit(d => {
+        const parsed = validateExpense(expense)
+        if (!parsed.ok) return parsed.error
+        if (!targetExists(d, parsed.value.target)) {
+          return 'Elige a qué va el gasto'
+        }
+        return {
           ...d,
-          investment,
-          fixed: syncInvestmentFixed(d.fixed, investment),
-        }),
-        () => saveInvestment(investment),
-      ),
+          expenses: [...d.expenses, { ...parsed.value, id: newId() }],
+        }
+      }),
+    removeExpense: id =>
+      edit(d => ({ ...d, expenses: d.expenses.filter(e => e.id !== id) })),
+    addIncome: income =>
+      edit(d => {
+        const parsed = validateIncome(income)
+        if (!parsed.ok) return parsed.error
+        return {
+          ...d,
+          incomes: [...d.incomes, { ...parsed.value, id: newId() }],
+        }
+      }),
+    removeIncome: id =>
+      edit(d => ({ ...d, incomes: d.incomes.filter(i => i.id !== id) })),
+    toggleFixedPaid: id => edit(d => togglePaid(d, id)),
+    setFixed: fixed =>
+      edit(d => {
+        const parsed = validateFixed(fixed)
+        if (!parsed.ok) return parsed.error
+        return {
+          ...d,
+          fixed: withInvestmentFixed(parsed.value, d.fixed, d.investment),
+        }
+      }),
+    setCategories: categories =>
+      edit(d => {
+        const parsed = validateCategories(categories)
+        if (!parsed.ok) return parsed.error
+        return { ...d, categories: parsed.value }
+      }),
+    setProfile: profile =>
+      edit(d => {
+        const parsed = validateProfile(profile)
+        if (!parsed.ok) return parsed.error
+        return { ...d, profile: parsed.value }
+      }),
+    setInvestment: investment =>
+      edit(d => {
+        const parsed = validateInvestment(investment)
+        if (!parsed.ok) return parsed.error
+        return {
+          ...d,
+          investment: parsed.value,
+          fixed: syncInvestmentFixed(d.fixed, parsed.value),
+        }
+      }),
   }
 
   return <FinanceContext value={value}>{children}</FinanceContext>

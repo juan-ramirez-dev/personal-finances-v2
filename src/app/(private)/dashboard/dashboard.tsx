@@ -5,6 +5,7 @@ import { logout } from '@/app/(auth)/actions'
 import { Button } from '@/components/ui/button'
 import type { ExpenseTarget } from '@/lib/finance/types'
 import { formatMoney, formatShortDate } from '@/lib/finance/format'
+import { clearDataKey } from '@/lib/vault/key-store'
 import { useFinance } from '../finance-provider'
 import { AddExpenseModal } from './add-expense-modal'
 import { AddIncomeModal } from './add-income-modal'
@@ -55,7 +56,12 @@ export function Dashboard({ userName }: { userName: string }) {
           >
             Ingreso
           </button>
-          <form action={logout}>
+          <form
+            action={async () => {
+              await clearDataKey()
+              await logout()
+            }}
+          >
             <button type="submit">Salir</button>
           </form>
         </nav>
