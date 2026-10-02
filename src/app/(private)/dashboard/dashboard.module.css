@@ -55,6 +55,7 @@
 }
 
 .nav button,
+.nav a,
 .user {
   padding: 0;
   font-size: var(--text-2xs);
@@ -67,10 +68,16 @@
 
 .nav button {
   cursor: pointer;
-  color: var(--color-text-muted);
 }
 
-.nav button:hover {
+.nav button,
+.nav a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.nav button:hover,
+.nav a:hover {
   color: var(--color-primary);
 }
 

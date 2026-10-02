@@ -6,18 +6,21 @@ import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import field from '@/components/ui/field.module.css'
 import { register } from '@/lib/api-client/auth'
+import { MIN_PASSWORD_LENGTH } from '@/lib/auth/new-password'
 import { errorMessage } from '@/lib/api-client/http'
 import { clearDataKey } from '@/lib/vault/key-store'
 import { deriveKeys } from '@/lib/vault/keys'
 import styles from '../login/login.module.css'
+import { CodesStep } from '../codes-step'
 import { unlockVault } from '../unlock-vault'
-import { MIN_PASSWORD_LENGTH, validateRegister } from './validate-register'
+import { validateRegister } from './validate-register'
 
 export function RegisterForm() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [codes, setCodes] = useState<string[] | null>(null)
 
   useEffect(() => {
     void clearDataKey()
@@ -48,13 +51,18 @@ export function RegisterForm() {
         setNotice(result.notice)
         return
       }
-      const failed = await unlockVault(result.session, masterKey)
-      if (failed) {
-        setError(failed)
+      const unlocked = await unlockVault(result.session, masterKey)
+      if (!unlocked.ok) {
+        setError(unlocked.error)
         return
       }
-      router.replace('/')
+      if (unlocked.recoveryCodes) setCodes(unlocked.recoveryCodes)
+      else router.replace('/')
     })
+  }
+
+  if (codes) {
+    return <CodesStep codes={codes} onDone={() => router.replace('/')} />
   }
 
   return (
@@ -112,7 +120,8 @@ export function RegisterForm() {
 
       <p className={styles.privacy}>
         Tus datos se cifran en tu navegador con tu contraseña. Ni nosotros
-        podemos verlos. Si la olvidas, no se pueden recuperar.{' '}
+        podemos verlos. Al crear la cuenta te damos códigos de recuperación:
+        guárdalos, son la única forma de volver a entrar si la olvidas.{' '}
         <Link href="/privacy">Cómo funciona</Link>
       </p>
 

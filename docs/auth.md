@@ -7,6 +7,7 @@
    - Si devuelve sesión → entra directo. Si pide confirmar email → mensaje.
    - Login → `POST /api/auth/login` → Supabase `signInWithPassword` con `authPassword`.
    - El endpoint devuelve la llave envuelta. El navegador la abre y redirige.
+   - Olvidé la contraseña → `/forgot` con un código de recuperación (`docs/password-recovery.md`).
 2. Se guarda solo el `access_token` en cookie `session`:
    - httpOnly (JS del navegador no la lee)
    - `maxAge` = lo que le queda al token → vence junto con él

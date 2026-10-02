@@ -17,3 +17,11 @@ export const env = {
   ),
   jwtSecret: process.env.SUPABASE_JWT_SECRET || null,
 }
+
+// Se lee al usarse: solo el reset y el cambio de contraseña lo necesitan.
+export function serviceRoleKey(): string {
+  return required(
+    'SUPABASE_SERVICE_ROLE_KEY',
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  )
+}

@@ -1,28 +1,46 @@
 # Recuperar contraseña
 
-**Estado:** sin hacer. Tarea aparte, que incluye tomar la decisión.
+**Decisión:** códigos de recuperación de un uso. Datos intactos. E2E intacto.
 
 ## El problema
 
 - La llave que abre los datos sale de la contraseña (`docs/encryption.md`).
-- Olvidar la contraseña = nadie puede abrir los datos. Ni nosotros.
-- Resetearla desde el dashboard de Supabase rompe el login: la app deriva otra `authPassword`.
+- Cambiar la contraseña sin la vieja = nadie puede re-envolver `dataKey`.
+- Por eso un reset solo por email no sirve: entras, pero sin datos.
 
-## Opciones
+## Códigos
 
-1. **Sin recuperación** (hoy).
-   - Pro: cero riesgo, cero código.
-   - Contra: olvidar = perder todo.
-2. **Código de recuperación** al registrarse.
-   - Se muestra una vez. Envuelve una segunda copia de `dataKey`.
-   - Pro: estándar (Bitwarden, Proton).
-   - Contra: el usuario tiene que guardarlo bien.
-3. **Cambiar contraseña con sesión activa.**
-   - Re-envuelve `dataKey` con la nueva `masterKey` y cambia `authPassword` en Supabase.
-   - Pro: barato (una sola llave).
-   - Contra: no sirve si ya la olvidaste. Complementa a 2, no la reemplaza.
+- 4 por usuario. Se crean en el navegador junto con `dataKey` (registro o primer login).
+- 20 caracteres base32, 100 bits. Sin PBKDF2: adivinarlo no es viable.
+- De cada código salen dos cosas por HKDF:
+  - `authToken` → prueba que lo tienes. La DB guarda `sha256(authToken)`.
+  - `codeKey` → envuelve una copia de `dataKey`.
+- El texto del código va `sealed` con `dataKey`: se puede ver en Ajustes con sesión.
+- Tabla `recovery_codes`. Código: `src/lib/vault/recovery.ts`.
 
-## Qué toca cambiar en cualquier caso
+## Flujos
 
-- Policy de update en `user_keys` (hoy no existe a propósito).
-- Copy de `/privacy` y del registro.
+**Olvidé mi contraseña** (`/forgot`: email + código + nueva)
+
+1. Navegador saca `authToken` y `codeKey` del código.
+2. `POST /api/auth/recover/start` → server busca el hash y valida el email → devuelve la copia envuelta.
+3. Navegador abre `dataKey`, la envuelve con la nueva `masterKey` y crea 1 código nuevo.
+4. `POST /api/auth/recover/finish` → re-valida, cambia envoltura y contraseña, gasta el código, guarda el nuevo, inicia sesión.
+
+**Ajustes** (`/settings`, con sesión)
+
+- Ver códigos: se descifran con la `dataKey` de la sesión.
+- Generar nuevos: pide la contraseña, reemplaza los 4.
+- Cambiar contraseña: pide la actual, re-envuelve `dataKey`.
+
+## Reglas
+
+- Un código sirve una vez. Al usarlo llega otro. Los demás siguen sirviendo.
+- Email o código mal → mismo error. No se revela cuál falló.
+- Si Supabase no acepta la contraseña nueva, vuelve la envoltura vieja y el código no se gasta.
+- El reset y el cambio de contraseña usan `SUPABASE_SERVICE_ROLE_KEY` (solo server).
+
+## Riesgos aceptados
+
+- Perder la contraseña **y** todos los códigos = perder los datos.
+- Quien tenga un código y tu email puede cambiar tu contraseña. Igual que en cualquier app con códigos de respaldo.

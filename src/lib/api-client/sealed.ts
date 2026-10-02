@@ -7,6 +7,7 @@ export type SealedTable =
   | 'categories'
   | 'expenses'
   | 'incomes'
+  | 'recovery_codes'
 
 // Cifra y descifra celdas de un usuario. `column` es el nombre real en la DB.
 // Settings e investments usan el userId como id de fila.

@@ -1,4 +1,9 @@
-import type { RegisterResult, VaultSession } from '@/lib/api/auth/schema'
+import type {
+  RecoveryCodeEntry,
+  RegisterResult,
+  SealedRecoveryCode,
+  VaultSession,
+} from '@/lib/api/auth/schema'
 import type { WrappedKey } from '@/lib/vault/keys'
 import { request } from './http'
 
@@ -23,8 +28,46 @@ export function register(
   })
 }
 
-export function saveUserKey(key: WrappedKey) {
-  return request<{ existing: WrappedKey | null }>('POST', '/api/auth/key', key)
+export function saveUserKey(key: WrappedKey, codes: RecoveryCodeEntry[]) {
+  return request<{ existing: WrappedKey | null }>('POST', '/api/auth/key', {
+    key,
+    codes,
+  })
+}
+
+export function getUserKey() {
+  return request<WrappedKey>('GET', '/api/auth/key')
+}
+
+export function changePassword(authPassword: string, key: WrappedKey) {
+  return request<unknown>('PUT', '/api/auth/password', { authPassword, key })
+}
+
+export function getRecoveryCodes() {
+  return request<SealedRecoveryCode[]>('GET', '/api/auth/recovery-codes')
+}
+
+export function replaceRecoveryCodes(codes: RecoveryCodeEntry[]) {
+  return request<unknown>('PUT', '/api/auth/recovery-codes', codes)
+}
+
+// Al server va un token que sale del código. El código se queda aquí.
+export function recoverStart(email: string, authToken: string) {
+  return request<{ userId: string; key: WrappedKey }>(
+    'POST',
+    '/api/auth/recover/start',
+    { email, authToken },
+  )
+}
+
+export function recoverFinish(input: {
+  email: string
+  authPassword: string
+  authToken: string
+  key: WrappedKey
+  newCode: RecoveryCodeEntry
+}) {
+  return request<VaultSession>('POST', '/api/auth/recover/finish', input)
 }
 
 export function logout() {

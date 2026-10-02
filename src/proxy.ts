@@ -3,7 +3,7 @@ import { SESSION_COOKIE } from '@/lib/auth/constants'
 
 // Chequeo rápido: solo mira si existe la cookie.
 // La seguridad real está en los guards (src/lib/auth/guards.ts).
-const PUBLIC_ROUTES = ['/login', '/register']
+const PUBLIC_ROUTES = ['/login', '/register', '/forgot']
 // Abren con y sin sesión: no redirigen nunca.
 const OPEN_ROUTES = ['/privacy']
 

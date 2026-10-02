@@ -1,7 +1,7 @@
 -- RLS: un usuario no ve ni toca nada de otro. Correr: supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(22);
 
 insert into auth.users (instance_id, id, aud, role, email) values
   ('00000000-0000-0000-0000-000000000000', 'aaaaaaaa-0000-4000-8000-000000000000', 'authenticated', 'authenticated', 'a@test.co'),
@@ -13,6 +13,8 @@ select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-0000000
 
 insert into public.user_keys (user_id, wrapped_key, iv, kdf_iterations)
 values ('aaaaaaaa-0000-4000-8000-000000000000', 'llave-a', 'iv-a', 600000);
+insert into public.recovery_codes (id, auth_hash, wrapped_key, iv, code)
+values ('aaaaaaaa-5555-4000-8000-000000000000', repeat('a', 64), 'copia-a', 'iv-a', 'aXY=.Y3Q=');
 insert into public.finance_settings (monthly_income, payday) values ('aXY=.Y3Q=', 1);
 insert into public.investments (monthly_contribution, total_balance) values ('aXY=.Y3Q=', 'aXY=.Y3Q=');
 insert into public.fixed_expenses (id, name, amount, due_day)
@@ -40,6 +42,7 @@ select is_empty('select 1 from public.fixed_expenses', 'B no ve fijos de A');
 select is_empty('select 1 from public.categories', 'B no ve categorías de A');
 select is_empty('select 1 from public.expenses', 'B no ve gastos de A');
 select is_empty('select 1 from public.incomes', 'B no ve ingresos de A');
+select is_empty('select 1 from public.recovery_codes', 'B no ve códigos de A');
 
 select is_empty(
   $$ update public.categories set name = 'aGFj.aw==' returning id $$,
@@ -47,7 +50,7 @@ select is_empty(
 );
 select is_empty(
   $$ update public.user_keys set wrapped_key = 'hack' returning user_id $$,
-  'Nadie edita llaves (tampoco B)'
+  'B no edita la llave de A'
 );
 select is_empty(
   $$ delete from public.expenses returning id $$,
@@ -56,6 +59,10 @@ select is_empty(
 select is_empty(
   $$ delete from public.incomes returning id $$,
   'B no borra ingresos de A'
+);
+select is_empty(
+  $$ delete from public.recovery_codes returning id $$,
+  'B no borra códigos de A'
 );
 select throws_ok(
   $$ insert into public.expenses (id, amount, description, spent_on, category_id)
@@ -100,6 +107,11 @@ select results_eq(
   $$ select wrapped_key from public.user_keys $$,
   $$ values ('llave-a') $$,
   'La llave de A sigue intacta'
+);
+select results_eq(
+  $$ select count(*)::int from public.recovery_codes $$,
+  $$ values (1) $$,
+  'Los códigos de A siguen intactos'
 );
 
 select * from finish();

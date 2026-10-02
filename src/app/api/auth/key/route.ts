@@ -1,7 +1,10 @@
 import { authed, readJson } from '@/lib/api/http'
-import { parseWrappedKey } from '@/lib/api/auth/schema'
-import { saveUserKey } from '@/lib/api/auth/service'
+import { parseNewVault } from '@/lib/api/auth/schema'
+import { readUserKey, saveUserKey } from '@/lib/api/auth/service'
+
+// La envoltura actual: ajustes la abre con la contraseña para re-envolverla.
+export const GET = authed(async ctx => readUserKey(ctx))
 
 export const POST = authed(async (ctx, req) =>
-  saveUserKey(ctx, parseWrappedKey(await readJson(req))),
+  saveUserKey(ctx, parseNewVault(await readJson(req))),
 )

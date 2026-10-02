@@ -13,6 +13,7 @@ const STEPS = [
   'A nuestro servidor solo llega la llave para entrar. Con ella no se puede descifrar nada.',
   'Cada gasto, ingreso o presupuesto se cifra en tu navegador antes de enviarse.',
   'Guardamos solo texto cifrado. Al volver a entrar, tu navegador lo descifra.',
+  'Tus códigos de recuperación guardan otra copia de la llave, cerrada con cada código.',
 ]
 
 export default function PrivacyPage() {
@@ -61,8 +62,18 @@ export default function PrivacyPage() {
       <section className={styles.warning}>
         <h2>Si olvidas tu contraseña</h2>
         <p>
-          Tus datos no se pueden recuperar. Nadie más tiene la llave. Por ahora
-          no hay forma de restablecerla.
+          Al crear la cuenta te damos 4 códigos de recuperación. Con cualquiera
+          pones una contraseña nueva y tus datos siguen ahí. Cada código sirve
+          una vez y te damos otro al usarlo.
+        </p>
+        <p>
+          Los códigos se crean en tu navegador. Nosotros solo guardamos una
+          huella que no sirve para descifrar. Puedes verlos o cambiarlos en
+          Ajustes.
+        </p>
+        <p>
+          Sin tu contraseña y sin un código, nadie puede abrir tus datos. Ni
+          nosotros.
         </p>
       </section>
 

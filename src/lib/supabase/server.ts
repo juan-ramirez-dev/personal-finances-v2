@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createClient } from '@supabase/supabase-js'
 import { getSession } from '@/lib/auth/session'
-import { env } from '@/lib/env'
+import { env, serviceRoleKey } from '@/lib/env'
 import type { Database } from './database.types'
 
 // Sin sesión persistida: el token vive solo en nuestra cookie httpOnly.
@@ -33,4 +33,10 @@ export async function createSessionClient() {
   const session = await getSession()
   if (!session) throw new Error('Sin sesión')
   return createUserClient(session.accessToken)
+}
+
+// Salta RLS. Solo para lo que no tiene sesión de usuario (reset) o es de Auth
+// (cambiar contraseña). Nunca llega al cliente: este archivo es server-only.
+export function createAdminClient() {
+  return createClient<Database>(env.supabaseUrl, serviceRoleKey(), options)
 }
