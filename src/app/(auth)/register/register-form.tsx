@@ -1,20 +1,64 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import field from '@/components/ui/field.module.css'
-import { register, type RegisterState } from '../actions'
+import { register } from '@/lib/api-client/auth'
+import { errorMessage } from '@/lib/api-client/http'
+import { clearDataKey } from '@/lib/vault/key-store'
+import { deriveKeys } from '@/lib/vault/keys'
 import styles from '../login/login.module.css'
-import { MIN_PASSWORD_LENGTH } from './validate-register'
-
-const initialState: RegisterState = { error: null, notice: null }
+import { unlockVault } from '../unlock-vault'
+import { MIN_PASSWORD_LENGTH, validateRegister } from './validate-register'
 
 export function RegisterForm() {
-  const [state, action, pending] = useActionState(register, initialState)
+  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  useEffect(() => {
+    void clearDataKey()
+  }, [])
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setNotice(null)
+    // El server ya no ve la contraseña real: sus reglas se validan aquí.
+    const valid = validateRegister(new FormData(event.currentTarget))
+    if (!valid.ok) {
+      setError(valid.error)
+      return
+    }
+    const { fullName, email, password } = valid.data
+
+    startTransition(async () => {
+      const { authPassword, masterKey } = await deriveKeys(email, password)
+      let result
+      try {
+        result = await register(fullName, email, authPassword)
+      } catch (failure) {
+        setError(errorMessage(failure))
+        return
+      }
+      setError(null)
+      if (!result.session) {
+        setNotice(result.notice)
+        return
+      }
+      const failed = await unlockVault(result.session, masterKey)
+      if (failed) {
+        setError(failed)
+        return
+      }
+      router.replace('/')
+    })
+  }
 
   return (
-    <form action={action} className={styles.form}>
+    <form onSubmit={onSubmit} className={styles.form}>
       <div>
         <p className={styles.eyebrow}>Registro</p>
         <h2 className={styles.title}>Crea tu cuenta</h2>
@@ -66,8 +110,14 @@ export function RegisterForm() {
         />
       </label>
 
-      {state.error && <p className={styles.error}>{state.error}</p>}
-      {state.notice && <p className={styles.notice}>{state.notice}</p>}
+      <p className={styles.privacy}>
+        Tus datos se cifran en tu navegador con tu contraseña. Ni nosotros
+        podemos verlos. Si la olvidas, no se pueden recuperar.{' '}
+        <Link href="/privacy">Cómo funciona</Link>
+      </p>
+
+      {error && <p className={styles.error}>{error}</p>}
+      {notice && <p className={styles.notice}>{notice}</p>}
 
       <Button type="submit" disabled={pending}>
         {pending ? 'Creando…' : 'Crear cuenta'}

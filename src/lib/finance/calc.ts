@@ -151,8 +151,6 @@ export function unassigned(data: Omit<FinanceData, 'expenses' | 'incomes'>) {
   return data.profile.monthlyIncome - fixed - budgets
 }
 
-export const INVESTMENT_FIXED_ID = 'fixed-investment'
-
 // El aporte mensual a inversiones vive como un gasto fijo más.
 export function syncInvestmentFixed(
   fixed: FixedExpense[],
@@ -166,7 +164,7 @@ export function syncInvestmentFixed(
   return [
     ...rest,
     {
-      id: current?.id ?? INVESTMENT_FIXED_ID,
+      id: current?.id ?? crypto.randomUUID(),
       name: 'Inversión',
       amount: investment.monthlyContribution,
       dueDay: current?.dueDay ?? 1,

@@ -1,46 +1,32 @@
 import 'server-only'
 
 import { redirect } from 'next/navigation'
-import { getUserRole, type Role } from './roles'
 import { getSession } from './session'
 
+// Sin roles: nadie tiene más permisos que otro. Cada usuario solo ve lo suyo (RLS).
 export interface AuthUser {
   id: string
   email: string | null
   name: string | null
-  role: Role | null
   expiresAt: number
 }
 
 export class AuthError extends Error {
-  constructor(
-    public readonly status: 401 | 403,
-    message: string,
-  ) {
-    super(message)
-  }
+  readonly status = 401
 }
 
 /**
- * Núcleo de los guards. Equivale a AuthGuard + RolesGuard de Nest.
- * - Sin sesión → 401
- * - `roles` dado y el rol no está → 403
- * Úsalo directo en Server Actions: `const user = await authorize(['admin'])`
+ * Núcleo de los guards. Sin sesión válida → 401.
+ * Úsalo directo en Server Actions: `const user = await authorize()`
  */
-export async function authorize(roles?: readonly Role[]): Promise<AuthUser> {
+export async function authorize(): Promise<AuthUser> {
   const session = await getSession()
-  if (!session) throw new AuthError(401, 'No autenticado')
-
-  const role = await getUserRole(session.userId, session.accessToken)
-  if (roles && (!role || !roles.includes(role))) {
-    throw new AuthError(403, 'Sin permiso')
-  }
+  if (!session) throw new AuthError('No autenticado')
 
   return {
     id: session.userId,
     email: session.email,
     name: session.name,
-    role,
     expiresAt: session.expiresAt,
   }
 }
@@ -50,17 +36,11 @@ type RouteHandler<A extends unknown[]> = (
   ...args: A
 ) => Promise<Response>
 
-/**
- * Para Route Handlers. Responde 401/403 en JSON si no pasa.
- * `export const GET = withRoles(['admin'], async (user, req) => ...)`
- */
-export function withRoles<A extends unknown[]>(
-  roles: readonly Role[] | undefined,
-  handler: RouteHandler<A>,
-) {
+/** Para Route Handlers. `export const GET = withAuth(async (user) => ...)` */
+export function withAuth<A extends unknown[]>(handler: RouteHandler<A>) {
   return async (...args: A): Promise<Response> => {
     try {
-      const user = await authorize(roles)
+      const user = await authorize()
       return await handler(user, ...args)
     } catch (error) {
       if (error instanceof AuthError) {
@@ -71,23 +51,12 @@ export function withRoles<A extends unknown[]>(
   }
 }
 
-/** Solo exige sesión. `export const GET = withAuth(async (user) => ...)` */
-export function withAuth<A extends unknown[]>(handler: RouteHandler<A>) {
-  return withRoles(undefined, handler)
-}
-
-/**
- * Para páginas (Server Components). Redirige en vez de responder 401/403.
- * - Sin sesión → borra la cookie y va a /login
- * - Rol no permitido → /
- */
-export async function requireRole(roles?: readonly Role[]): Promise<AuthUser> {
+/** Para páginas. Sin sesión → borra la cookie y va a /login. */
+export async function requireUser(): Promise<AuthUser> {
   try {
-    return await authorize(roles)
+    return await authorize()
   } catch (error) {
-    if (error instanceof AuthError) {
-      redirect(error.status === 401 ? '/api/auth/clear-session' : '/')
-    }
+    if (error instanceof AuthError) redirect('/api/auth/clear-session')
     throw error
   }
 }

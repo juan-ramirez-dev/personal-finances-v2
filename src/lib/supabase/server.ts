@@ -18,6 +18,8 @@ export function createAnonClient() {
   )
 }
 
+export type Db = ReturnType<typeof createUserClient>
+
 // Consultas como el usuario: RLS aplica con su token.
 export function createUserClient(accessToken: string) {
   return createClient<Database>(env.supabaseUrl, env.supabasePublishableKey, {
@@ -26,7 +28,7 @@ export function createUserClient(accessToken: string) {
   })
 }
 
-// Usar después de authorize()/requireRole(): ahí ya se validó la sesión.
+// Usar después de authorize()/requireUser(): ahí ya se validó la sesión.
 export async function createSessionClient() {
   const session = await getSession()
   if (!session) throw new Error('Sin sesión')

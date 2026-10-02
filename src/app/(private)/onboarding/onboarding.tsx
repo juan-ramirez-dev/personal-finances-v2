@@ -50,21 +50,35 @@ const cleanFixed = (items: FixedExpense[]) =>
 const cleanCategories = (items: Category[]) => items.filter(c => c.name.trim())
 
 export function Onboarding({ userName }: { userName: string }) {
-  const { complete } = useFinance()
+  const finance = useFinance()
+  const saved = finance.draft
   const [step, setStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [saving, startSaving] = useTransition()
-  const [profile, setProfile] = useState<FinanceProfile>({
-    monthlyIncome: 0,
-    payday: 30,
-  })
-  const [fixed, setFixed] = useState<FixedExpense[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [investment, setInvestment] = useState<Investment>({
-    hasInvestments: false,
-    monthlyContribution: 0,
-    totalBalance: 0,
-  })
+  // Arranca con lo ya guardado: si recargas a mitad, retomas donde ibas.
+  const [profile, setProfile] = useState<FinanceProfile>(
+    saved?.profile ?? { monthlyIncome: 0, payday: 30 },
+  )
+  const [fixed, setFixed] = useState<FixedExpense[]>(saved?.fixed ?? [])
+  const [categories, setCategories] = useState<Category[]>(
+    saved?.categories ?? [],
+  )
+  const [investment, setInvestment] = useState<Investment>(
+    saved?.investment ?? {
+      hasInvestments: false,
+      monthlyContribution: 0,
+      totalBalance: 0,
+    },
+  )
+
+  // Cada paso se guarda al avanzar. El último cierra el onboarding.
+  const saveStep = () => {
+    if (step === 0) return finance.setProfile(profile)
+    if (step === 1) return finance.setFixed(cleanFixed(fixed))
+    if (step === 2) return finance.setCategories(cleanCategories(categories))
+    if (step === 3) return finance.setInvestment(investment)
+    return finance.complete()
+  }
 
   const draft = {
     profile,
@@ -106,9 +120,12 @@ export function Onboarding({ userName }: { userName: string }) {
           className={styles.form}
           onSubmit={e => {
             e.preventDefault()
-            if (!canContinue) return
-            if (isLast) startSaving(async () => setError(await complete(draft)))
-            else setStep(step + 1)
+            if (!canContinue || saving) return
+            startSaving(async () => {
+              const failed = await saveStep()
+              setError(failed)
+              if (!failed && !isLast) setStep(step + 1)
+            })
           }}
         >
           <div className={styles.heading}>

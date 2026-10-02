@@ -37,7 +37,7 @@ export type Database = {
       categories: {
         Row: {
           archived_at: string | null
-          budget: number
+          budget: string
           created_at: string
           id: string
           name: string
@@ -45,15 +45,15 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
-          budget?: number
+          budget: string
           created_at?: string
-          id?: string
+          id: string
           name: string
           user_id?: string
         }
         Update: {
           archived_at?: string | null
-          budget?: number
+          budget?: string
           created_at?: string
           id?: string
           name?: string
@@ -63,7 +63,7 @@ export type Database = {
       }
       expenses: {
         Row: {
-          amount: number
+          amount: string
           category_id: string | null
           created_at: string
           description: string
@@ -73,17 +73,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          amount: number
+          amount: string
           category_id?: string | null
           created_at?: string
-          description?: string
+          description: string
           fixed_expense_id?: string | null
-          id?: string
+          id: string
           spent_on: string
           user_id?: string
         }
         Update: {
-          amount?: number
+          amount?: string
           category_id?: string | null
           created_at?: string
           description?: string
@@ -111,19 +111,22 @@ export type Database = {
       }
       finance_settings: {
         Row: {
-          monthly_income: number
+          created_at: string
+          monthly_income: string
           onboarded_at: string | null
           payday: number
           user_id: string
         }
         Insert: {
-          monthly_income: number
+          created_at?: string
+          monthly_income: string
           onboarded_at?: string | null
           payday: number
           user_id?: string
         }
         Update: {
-          monthly_income?: number
+          created_at?: string
+          monthly_income?: string
           onboarded_at?: string | null
           payday?: number
           user_id?: string
@@ -132,7 +135,7 @@ export type Database = {
       }
       fixed_expenses: {
         Row: {
-          amount: number
+          amount: string
           archived_at: string | null
           created_at: string
           due_day: number
@@ -142,17 +145,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          amount: number
+          amount: string
           archived_at?: string | null
           created_at?: string
           due_day: number
-          id?: string
+          id: string
           is_investment?: boolean
           name: string
           user_id?: string
         }
         Update: {
-          amount?: number
+          amount?: string
           archived_at?: string | null
           created_at?: string
           due_day?: number
@@ -165,7 +168,7 @@ export type Database = {
       }
       incomes: {
         Row: {
-          amount: number
+          amount: string
           created_at: string
           description: string
           id: string
@@ -173,15 +176,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          amount: number
+          amount: string
           created_at?: string
-          description?: string
-          id?: string
+          description: string
+          id: string
           received_on: string
           user_id?: string
         }
         Update: {
-          amount?: number
+          amount?: string
           created_at?: string
           description?: string
           id?: string
@@ -193,65 +196,45 @@ export type Database = {
       investments: {
         Row: {
           has_investments: boolean
-          monthly_contribution: number
-          total_balance: number
+          monthly_contribution: string
+          total_balance: string
           user_id: string
         }
         Insert: {
           has_investments?: boolean
-          monthly_contribution?: number
-          total_balance?: number
+          monthly_contribution: string
+          total_balance: string
           user_id?: string
         }
         Update: {
           has_investments?: boolean
-          monthly_contribution?: number
-          total_balance?: number
+          monthly_contribution?: string
+          total_balance?: string
           user_id?: string
         }
         Relationships: []
       }
-      profiles: {
+      user_keys: {
         Row: {
           created_at: string
-          id: string
-          role_id: number
+          iv: string
+          kdf_iterations: number
+          user_id: string
+          wrapped_key: string
         }
         Insert: {
           created_at?: string
-          id: string
-          role_id: number
+          iv: string
+          kdf_iterations: number
+          user_id: string
+          wrapped_key: string
         }
         Update: {
           created_at?: string
-          id?: string
-          role_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'profiles_role_id_fkey'
-            columns: ['role_id']
-            isOneToOne: false
-            referencedRelation: 'roles'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      roles: {
-        Row: {
-          created_at: string
-          id: number
-          role_slug: string
-        }
-        Insert: {
-          created_at?: string
-          id?: never
-          role_slug: string
-        }
-        Update: {
-          created_at?: string
-          id?: never
-          role_slug?: string
+          iv?: string
+          kdf_iterations?: number
+          user_id?: string
+          wrapped_key?: string
         }
         Relationships: []
       }
@@ -260,24 +243,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      bogota_today: { Args: never; Returns: string }
-      complete_onboarding: { Args: { p: Json }; Returns: undefined }
-      cycle_summary: { Args: { p_today?: string }; Returns: Json }
-      get_cycle: {
-        Args: { p_payday: number; p_today: string }
-        Returns: Record<string, unknown>
-      }
-      payday_in: {
-        Args: { p_month: string; p_payday: number }
-        Returns: string
-      }
-      save_categories: { Args: { p: Json }; Returns: undefined }
-      save_fixed: { Args: { p: Json }; Returns: undefined }
-      save_investment: { Args: { p: Json }; Returns: undefined }
-      toggle_fixed_paid: {
-        Args: { p_fixed_id: string; p_today?: string }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

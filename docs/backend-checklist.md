@@ -1,47 +1,46 @@
 # Backend · checklist
 
-Estado del backend. Todo vive en Supabase.
+Estado del backend. Supabase guarda auth + tablas con columnas cifradas.
 
-## 1. Usuario semilla
+## 1. Usuarios
 
-- [x] Migración `seed_user`: usuario en `auth.users` + `auth.identities`, email confirmado.
-- [x] Trigger `handle_new_user` crea su `profiles` con rol `user`.
-- [x] Signup on (`/register`). Local: `supabase/config.toml`.
+- [x] Registro público (`/register`). Sin usuario semilla en el repo.
+- [x] Sin roles ni admin. RLS: cada usuario solo lo suyo.
 - [ ] Hosted: Auth → Providers → Email → "Allow new users" on.
-- [ ] Hosted: cambiar la clave temporal tras el primer deploy.
 
-## 2. Tablas (RLS: `user_id = auth.uid()`)
+## 2. Tablas (RLS dueño)
 
-- [x] `finance_settings`, `fixed_expenses`, `categories`, `expenses`, `investments`.
-- [x] Montos `bigint`. Borrado lógico (`archived_at`) en fijos y categorías.
-- [x] Gasto va a un fijo **o** a una categoría (check). FK con `user_id`: no se apunta a filas ajenas.
+- [x] `user_keys`: llave de datos envuelta. Sin update.
+- [x] `finance_settings`, `investments`, `fixed_expenses`, `categories`, `expenses`, `incomes`.
+- [x] Columnas sensibles con dominio `sealed` (`docs/encryption.md`).
+- [x] FKs compuestas `(id, user_id)`: nadie apunta a filas de otro usuario.
+- [x] Sin funciones SQL.
 
-## 3. Lógica (SQL, `supabase/migrations/*_finance_functions.sql`)
+## 3. Endpoints (`src/app/api/`)
 
-- [x] `get_cycle` = `getCycle` de `calc.ts`.
-- [x] `cycle_summary`: todo el panel en un llamado. `null` si falta onboarding.
-- [x] "Hoy" en `America/Bogota` (`bogota_today`).
-- [x] `complete_onboarding`, `toggle_fixed_paid`, `save_fixed`, `save_categories`, `save_investment`.
-- [x] Aporte de inversión = fijo `is_investment`, sincronizado en `save_investment`.
+Capas por recurso en `src/lib/api/<recurso>/`: `schema` (400) → `service` (404/409/422) → `repo` (DB).
 
-## 4. Server actions (`src/app/(private)/actions.ts`)
+| Ruta                                       | Regla                                       |
+| ------------------------------------------ | ------------------------------------------- |
+| `POST /api/auth/{login,register,logout}`   | contraseña derivada; cookie httpOnly        |
+| `POST /api/auth/key`                       | llave se crea una vez                       |
+| `GET /api/finance`                         | todo lo del usuario, cifrado                |
+| `PUT /api/settings`, `POST .../complete`   | completar sin perfil 422; dos veces 409     |
+| `PUT /api/investment`                      | un fijo de inversión; sin aporte se archiva |
+| `PUT /api/fixed-expenses`                  | archiva faltantes; no toca el de inversión  |
+| `DELETE /api/fixed-expenses/[id]/payments` | borra pagos del rango                       |
+| `PUT /api/categories`                      | archiva faltantes                           |
+| `POST /api/expenses`, `DELETE [id]`        | target activo y propio                      |
+| `POST /api/incomes`, `DELETE [id]`         | fecha válida                                |
 
-- [x] `authorize()` → validación (`src/lib/finance/validate.ts`) → RLS → `revalidatePath('/')`.
+## 4. Front
 
-## 5. Auth
+- [x] `src/lib/api-client/` es la única puerta a `/api`.
+- [x] `FinanceProvider`: descifra, calcula con `summarize()`, vista optimista y vuelve atrás si falla.
+- [x] Onboarding guarda paso a paso y se retoma tras recargar.
 
-- [x] `signInWithPassword` real. Mock borrado.
-- [x] `/` con `requireRole()`. Onboarding si no hay `onboarded_at`.
-- [x] `SessionTimer` (2h).
-- [x] Registro público en `/register`.
-
-## 6. Frontend
-
-- [x] `FinanceProvider` recibe datos del server + `useOptimistic`.
-- [x] Sin "Usar datos demo" ni "Reiniciar".
-- [x] Errores y estado "Guardando…" en modales.
-
-## 7. Calidad
+## 5. Calidad
 
 - [x] Tests RLS: `supabase/tests/rls.test.sql` (`supabase test db`, corre en CI).
-- [ ] Tests de `calc.ts` (pendiente, no elegidos aún).
+- [x] Tests de cifrado, llaves, aislamiento y services.
+- [ ] Recuperar contraseña (`docs/password-recovery.md`).

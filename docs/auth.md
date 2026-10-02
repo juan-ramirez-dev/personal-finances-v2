@@ -2,15 +2,17 @@
 
 ## Flujo
 
-1. Registro (`/register`) → Supabase `signUp` con `name` en metadata (el guard lo lee del token).
+1. El navegador deriva `authPassword` de la contraseña (`docs/encryption.md`). La real nunca sale.
+   - Registro → `POST /api/auth/register` → Supabase `signUp` con `authPassword` y `name` en metadata.
    - Si devuelve sesión → entra directo. Si pide confirmar email → mensaje.
-   - Login (`/login`) → Supabase `signInWithPassword`.
+   - Login → `POST /api/auth/login` → Supabase `signInWithPassword` con `authPassword`.
+   - El endpoint devuelve la llave envuelta. El navegador la abre y redirige.
 2. Se guarda solo el `access_token` en cookie `session`:
    - httpOnly (JS del navegador no la lee)
    - `maxAge` = lo que le queda al token → vence junto con él
 3. El refresh token se descarta. **Al vencer (2h) hay que hacer login otra vez.**
 4. Cada request: `jose` verifica firma, issuer, audience y expiración.
-5. `SessionTimer` manda a `/login` justo cuando vence.
+5. `SessionTimer` borra la llave y manda a `/login` justo cuando vence.
 
 ## Dónde se configura la duración
 
@@ -24,24 +26,12 @@
 
 ## Guards
 
-| Función                | Uso           | Si falla          |
-| ---------------------- | ------------- | ----------------- |
-| `withAuth(fn)`         | Route Handler | 401 JSON          |
-| `withRoles(roles, fn)` | Route Handler | 401 / 403 JSON    |
-| `authorize(roles?)`    | Server Action | lanza `AuthError` |
-| `requireRole(roles?)`  | Página        | redirige          |
+Sin roles ni admin. Todos los usuarios son iguales y cada uno solo ve lo suyo (RLS).
 
-- Rol: `profiles.role_id → roles.role_slug`. Consulta a DB en cada request (con `cache()` por request).
-- Al registrarse, un trigger crea el perfil con rol `user`.
-- Hacer admin a alguien (SQL editor):
+| Función         | Uso      | Si falla                  |
+| --------------- | -------- | ------------------------- |
+| `authed(fn)`    | Endpoint | 401 JSON (usa `withAuth`) |
+| `authorize()`   | Interno  | lanza `AuthError`         |
+| `requireUser()` | Página   | redirige a login          |
 
-```sql
-update public.profiles
-set role_id = (select id from public.roles where role_slug = 'admin')
-where id = '<user-id>';
-```
-
-## Agregar un rol
-
-1. Migración: `insert into public.roles (role_slug) values ('nuevo');`
-2. Agregarlo a `ROLES` en `src/lib/auth/roles.ts`.
+`authed` vive en `src/lib/api/http.ts`: agrega el cliente de DB con el token y traduce `ApiError` a JSON.
