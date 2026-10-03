@@ -104,7 +104,7 @@ export function RecoverySection({ userId, email }: RecoverySectionProps) {
           </Button>
         </form>
       ) : (
-        <Button type="button" variant="ghost" onClick={() => setAsking(true)}>
+        <Button type="button" variant="outline" onClick={() => setAsking(true)}>
           Generar códigos nuevos
         </Button>
       )}

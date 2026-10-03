@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from './button'
+import reveal from './reveal.module.css'
+import { stagger } from './reveal'
 import styles from './recovery-codes.module.css'
 
 interface RecoveryCodesProps {
@@ -22,13 +24,13 @@ export function RecoveryCodes({ codes, onDone }: RecoveryCodesProps) {
 
   function download() {
     const url = URL.createObjectURL(
-      new Blob([`Códigos de recuperación · Finanzas\n\n${text}\n`], {
+      new Blob([`Códigos de recuperación · Lucka\n\n${text}\n`], {
         type: 'text/plain',
       }),
     )
     const link = document.createElement('a')
     link.href = url
-    link.download = 'finanzas-codigos-recuperacion.txt'
+    link.download = 'lucka-codigos-recuperacion.txt'
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -36,15 +38,17 @@ export function RecoveryCodes({ codes, onDone }: RecoveryCodesProps) {
   return (
     <>
       <ul className={styles.codes}>
-        {codes.map(code => (
-          <li key={code}>{code}</li>
+        {codes.map((code, i) => (
+          <li key={code} className={reveal.reveal} style={stagger(i)}>
+            {code}
+          </li>
         ))}
       </ul>
       <div className={styles.actions}>
-        <Button type="button" variant="ghost" onClick={copy}>
+        <Button type="button" variant="outline" onClick={copy}>
           {copied ? 'Copiados' : 'Copiar'}
         </Button>
-        <Button type="button" variant="ghost" onClick={download}>
+        <Button type="button" variant="outline" onClick={download}>
           Descargar
         </Button>
       </div>

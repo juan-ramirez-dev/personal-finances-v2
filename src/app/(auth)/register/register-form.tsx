@@ -10,7 +10,7 @@ import { MIN_PASSWORD_LENGTH } from '@/lib/auth/new-password'
 import { errorMessage } from '@/lib/api-client/http'
 import { clearDataKey } from '@/lib/vault/key-store'
 import { deriveKeys } from '@/lib/vault/keys'
-import styles from '../login/login.module.css'
+import styles from '../auth-form.module.css'
 import { CodesStep } from '../codes-step'
 import { unlockVault } from '../unlock-vault'
 import { validateRegister } from './validate-register'
@@ -133,7 +133,9 @@ export function RegisterForm() {
       </Button>
 
       <p className={styles.switch}>
-        ¿Ya tienes cuenta? <Link href="/login">Entrar</Link>
+        <span>
+          ¿Ya tienes cuenta? <Link href="/login">Entrar</Link>
+        </span>
       </p>
     </form>
   )

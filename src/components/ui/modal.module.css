@@ -4,8 +4,10 @@
   padding: 0;
   color: var(--color-text);
   background: var(--color-bg);
-  border: var(--line);
-  border-top: 4px solid var(--color-primary);
+  border: var(--line-soft);
+  border-top: 2px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 24px 48px var(--color-overlay);
 }
 
 .wide {
@@ -14,15 +16,14 @@
 
 .dialog::backdrop {
   background: var(--color-overlay);
-  backdrop-filter: blur(2px);
 }
 
 .dialog[open] {
-  animation: rise var(--duration) var(--ease);
+  animation: rise var(--duration) var(--ease-out);
 }
 
 .dialog[open]::backdrop {
-  animation: fade var(--duration) var(--ease);
+  animation: fade var(--duration) var(--ease-out);
 }
 
 .inner {
@@ -43,7 +44,7 @@
 .eyebrow {
   margin: 0 0 var(--space-1);
   font-size: var(--text-2xs);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-primary);
@@ -53,17 +54,23 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--text-xl);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   line-height: 1.1;
 }
 
 .close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: calc(var(--space-2) * -1) calc(var(--space-3) * -1) 0 0;
   padding: 0;
   font-size: var(--text-xl);
   line-height: 1;
   background: none;
   border: none;
   cursor: pointer;
+  transition: color var(--duration-fast) var(--ease);
 }
 
 .close:hover {
@@ -78,7 +85,7 @@
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
 }
 

@@ -15,7 +15,7 @@
 .eyebrow {
   margin: 0;
   font-size: var(--text-2xs);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-primary);
@@ -25,7 +25,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--text-3xl);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   line-height: 1;
 }
 
@@ -33,18 +33,6 @@
   font-size: var(--text-lg);
   font-style: italic;
   color: var(--color-text-muted);
-}
-
-.meter {
-  height: 2px;
-  background: var(--color-track);
-}
-
-.meter span {
-  display: block;
-  height: 100%;
-  background: var(--color-ink);
-  transition: width 500ms var(--ease);
 }
 
 .alert {
@@ -58,7 +46,9 @@
   background: var(--color-primary);
   border: none;
   cursor: pointer;
-  animation: pulse 2.4s var(--ease) 1;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) var(--ease);
+  animation: appear var(--duration-slow) var(--ease-out) both;
 }
 
 .alert:hover {
@@ -158,13 +148,13 @@
   display: flex;
   flex-direction: column;
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .name small,
 .amount small {
   font-size: var(--text-2xs);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -185,28 +175,11 @@
 
 .bar {
   grid-column: 1 / -1;
-  height: 3px;
-  background: var(--color-track);
-}
-
-.bar span {
-  display: block;
-  height: 100%;
-  background: var(--color-ink);
-  transition: width 500ms var(--ease);
-}
-
-.budgetRow[data-warn] .bar span {
-  background: var(--color-text-muted);
-}
-
-.budgetRow[data-over] .bar span {
-  background: var(--color-primary);
 }
 
 .budgetRow[data-over] .name small,
 .budgetRow[data-over] .amount {
-  color: var(--color-primary);
+  color: var(--color-warning);
 }
 
 .foot {
@@ -222,23 +195,14 @@
 .foot strong {
   font-family: var(--font-serif);
   font-size: var(--text-md);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   color: var(--color-text);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    transform: none;
-  }
-  10% {
-    transform: translateX(-3px);
-  }
-  20% {
-    transform: translateX(3px);
-  }
-  30% {
-    transform: none;
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
 }
 

@@ -11,7 +11,7 @@ import { clearDataKey } from '@/lib/vault/key-store'
 import { deriveKeys } from '@/lib/vault/keys'
 import { CodesStep } from '../codes-step'
 import { unlockVault } from '../unlock-vault'
-import styles from './login.module.css'
+import styles from '../auth-form.module.css'
 
 export function LoginForm() {
   const router = useRouter()
@@ -59,7 +59,9 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className={styles.form}>
       <div>
         <p className={styles.eyebrow}>Acceso</p>
-        <h2 className={styles.title}>Bienvenido</h2>
+        <h2 className={styles.title}>
+          Bienvenido <em>de vuelta.</em>
+        </h2>
       </div>
 
       <label className={field.field}>
@@ -91,10 +93,10 @@ export function LoginForm() {
       </Button>
 
       <p className={styles.switch}>
-        ¿No tienes cuenta? <Link href="/register">Crear cuenta</Link>
-        <br />
+        <span>
+          ¿No tienes cuenta? <Link href="/register">Crear cuenta</Link>
+        </span>
         <Link href="/forgot">¿Olvidaste tu contraseña?</Link>
-        <br />
         <Link href="/privacy">Privacidad</Link>
       </p>
     </form>

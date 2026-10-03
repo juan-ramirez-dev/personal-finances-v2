@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import reveal from '@/components/ui/reveal.module.css'
 import styles from './privacy.module.css'
 
 export const metadata: Metadata = {
-  title: 'Privacidad · Finanzas',
+  title: 'Privacidad · Lucka',
   description: 'Cómo se cifran tus datos.',
 }
 
@@ -19,7 +20,7 @@ const STEPS = [
 export default function PrivacyPage() {
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
+      <header className={`${reveal.reveal} ${styles.header}`}>
         <p className={styles.eyebrow}>Privacidad</p>
         <h1 className={styles.title}>Tus datos se cifran con tu contraseña.</h1>
         <p className={styles.lead}>

@@ -3,27 +3,19 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--text-xs);
-  font-weight: 600;
+  min-height: 48px;
+  padding: 0 var(--space-6);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
-    background var(--duration) var(--ease),
-    color var(--duration) var(--ease),
-    border-color var(--duration) var(--ease);
-}
-
-.primary {
-  color: var(--color-text-inverse);
-  background: var(--color-primary);
-}
-
-.primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
+    background var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease);
 }
 
 .ink {
@@ -35,29 +27,43 @@
   background: var(--color-primary);
 }
 
-.ghost {
+.outline {
   color: var(--color-text);
   background: transparent;
   border-color: var(--color-ink);
 }
 
-.ghost:hover:not(:disabled) {
+.outline:hover:not(:disabled) {
   color: var(--color-text-inverse);
   background: var(--color-ink);
 }
 
+/* Subrayado que crece desde la izquierda en vez de aparecer de golpe. */
 .link {
-  padding: 0;
+  min-height: auto;
+  padding: var(--space-1) 0;
   color: var(--color-text);
-  background: transparent;
-  border-bottom: 1px solid currentColor;
+  background: linear-gradient(currentColor, currentColor) left bottom / 100% 1px
+    no-repeat;
+  transition: color var(--duration-fast) var(--ease);
 }
 
 .link:hover:not(:disabled) {
   color: var(--color-primary);
+  animation: underline var(--duration) var(--ease-out) forwards;
 }
 
 .button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+@keyframes underline {
+  from {
+    background-size: 0% 1px;
+  }
+
+  to {
+    background-size: 100% 1px;
+  }
 }

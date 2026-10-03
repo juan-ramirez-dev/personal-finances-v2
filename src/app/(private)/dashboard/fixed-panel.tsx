@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import type { Summary } from '@/lib/finance/calc'
 import { formatMoney } from '@/lib/finance/format'
 import { useFinance } from '../finance-provider'
@@ -31,11 +32,7 @@ export function FixedPanel({ summary, onEdit }: FixedPanelProps) {
           {paidCount}
           <span>/{total} pagados</span>
         </h2>
-        <div className={styles.meter}>
-          <span
-            style={{ width: total ? `${(paidCount / total) * 100}%` : 0 }}
-          />
-        </div>
+        <Progress value={total ? paidCount / total : 0} thin />
       </header>
 
       <ul className={styles.list}>

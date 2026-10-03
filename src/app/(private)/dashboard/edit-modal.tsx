@@ -97,7 +97,7 @@ function EditForm({
       {error && <p className={styles.error}>{error}</p>}
 
       <footer className={styles.footer}>
-        <Button type="button" variant="ghost" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose}>
           Cancelar
         </Button>
         <Button

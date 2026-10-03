@@ -1,7 +1,7 @@
 'use client'
 
 import { RecoveryCodes } from '@/components/ui/recovery-codes'
-import styles from './login/login.module.css'
+import styles from './auth-form.module.css'
 
 interface CodesStepProps {
   codes: string[]

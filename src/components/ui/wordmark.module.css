@@ -1,0 +1,20 @@
+.wordmark {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-medium);
+  line-height: 0.9;
+  letter-spacing: var(--tracking-brand);
+  text-transform: uppercase;
+}
+
+.sm {
+  font-size: var(--text-xl);
+}
+
+.md {
+  font-size: var(--text-2xl);
+}
+
+.lg {
+  font-size: clamp(4rem, 10vw, 9rem);
+}

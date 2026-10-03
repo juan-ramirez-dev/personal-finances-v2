@@ -66,6 +66,11 @@ export default defineConfig([
     files: ['eslint-rules/**'],
     rules: { 'house/no-hardcoded-colors': 'off' },
   },
+  // Único lugar para colores en TS (ver docs/css.md).
+  {
+    files: ['src/lib/constants/colors.ts'],
+    rules: { 'house/no-hardcoded-colors': 'off' },
+  },
   // CSS: solo se usa para la regla de colores.
   {
     files: ['**/*.css'],
