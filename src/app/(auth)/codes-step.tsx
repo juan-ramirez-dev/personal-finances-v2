@@ -5,11 +5,15 @@ import styles from './auth-form.module.css'
 
 interface CodesStepProps {
   codes: string[]
-  onDone: () => void
+}
+
+// Carga completa: con router.replace la pantalla se quedaba pegada hasta recargar.
+function enterApp() {
+  window.location.replace('/')
 }
 
 // Se muestran una vez al salir del form. Después solo en Ajustes.
-export function CodesStep({ codes, onDone }: CodesStepProps) {
+export function CodesStep({ codes }: CodesStepProps) {
   const single = codes.length === 1
   return (
     <div className={styles.form}>
@@ -24,7 +28,7 @@ export function CodesStep({ codes, onDone }: CodesStepProps) {
           ? 'El código que usaste ya no sirve. Este lo reemplaza. Guárdalo fuera de esta app; también lo ves en Ajustes.'
           : 'Si olvidas tu contraseña, cualquiera de estos códigos la cambia sin perder tus datos. Cada uno sirve una vez. Guárdalos fuera de esta app; también los ves en Ajustes.'}
       </p>
-      <RecoveryCodes codes={codes} onDone={onDone} />
+      <RecoveryCodes codes={codes} onDone={enterApp} />
     </div>
   )
 }

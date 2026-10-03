@@ -52,7 +52,7 @@ export function LoginForm() {
   }
 
   if (codes) {
-    return <CodesStep codes={codes} onDone={() => router.replace('/')} />
+    return <CodesStep codes={codes} />
   }
 
   return (
