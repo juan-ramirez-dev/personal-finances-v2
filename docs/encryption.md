@@ -5,15 +5,17 @@ Ni el servidor ni quien tenga acceso a la DB puede leer montos, nombres ni descr
 
 ## Llaves
 
-| Llave          | Sale de                    | Para qué                   | Dónde vive                                   |
-| -------------- | -------------------------- | -------------------------- | -------------------------------------------- |
-| `authPassword` | `HKDF(base, "auth")`       | Contraseña para Supabase   | Se envía en login/registro                   |
-| `masterKey`    | `HKDF(base, "enc")`        | Envolver / abrir `dataKey` | Memoria, solo durante el login               |
-| `dataKey`      | Al azar en el primer login | Cifrar cada campo          | `user_keys` (envuelta) + IndexedDB (abierta) |
+| Llave          | Sale de                        | Para qué                        | Dónde vive                                   |
+| -------------- | ------------------------------ | ------------------------------- | -------------------------------------------- |
+| `authPassword` | `HKDF(base, "auth")`           | Contraseña para Supabase        | Se envía en login/registro                   |
+| `masterKey`    | `HKDF(base, "enc")`            | Envolver / abrir `dataKey`      | Memoria, solo durante el login               |
+| `dataKey`      | Al azar en el primer login     | Cifrar cada campo               | `user_keys` (envuelta) + IndexedDB (abierta) |
+| `codeKey`      | `HKDF(código, "recovery-enc")` | Envolver una copia de `dataKey` | `recovery_codes` (la copia), nunca la llave  |
 
 - `base = PBKDF2-SHA256(password, salt = email normalizado, 600_000)`.
 - HKDF es de una vía: con `authPassword` no se llega a `masterKey`.
 - `dataKey` no depende de la contraseña: cambiarla solo re-envuelve una llave.
+- Cada código de recuperación guarda otra copia de `dataKey`. Ver `docs/password-recovery.md`.
 - En IndexedDB es un `CryptoKey` no exportable, con `expiresAt` = sesión.
 
 Código: `src/lib/vault/`.
@@ -28,6 +30,7 @@ Código: `src/lib/vault/`.
 | `categories`       | `name`, `budget`                        | `archived_at`                                 |
 | `expenses`         | `amount`, `description`                 | `spent_on`, `fixed_expense_id`, `category_id` |
 | `incomes`          | `amount`, `description`                 | `received_on`                                 |
+| `recovery_codes`   | `code`                                  | `auth_hash` (hash), copia envuelta            |
 
 Ids, `user_id` y `created_at` siempre en claro.
 
@@ -58,4 +61,4 @@ Ids, `user_id` y `created_at` siempre en claro.
 - Email y nombre (auth), fechas, días de pago, relaciones entre filas, si tienes inversiones.
 - El largo del texto cifrado (aceptado: no se rellena).
 
-Riesgos y recuperación: `docs/password-recovery.md`.
+Recuperar contraseña: `docs/password-recovery.md`.

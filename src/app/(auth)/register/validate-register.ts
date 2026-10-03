@@ -1,5 +1,4 @@
-// Igual a minimum_password_length de supabase/config.toml.
-export const MIN_PASSWORD_LENGTH = 6
+import { checkNewPassword } from '@/lib/auth/new-password'
 
 export interface RegisterInput {
   fullName: string
@@ -22,15 +21,8 @@ export function validateRegister(formData: FormData): RegisterValidation {
   if (!fullName || !email || !password) {
     return { ok: false, error: 'Nombre, email y contraseña requeridos' }
   }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return {
-      ok: false,
-      error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`,
-    }
-  }
-  if (password !== confirm) {
-    return { ok: false, error: 'Las contraseñas no coinciden' }
-  }
+  const error = checkNewPassword(password, confirm)
+  if (error) return { ok: false, error }
 
   return { ok: true, data: { fullName, email, password } }
 }

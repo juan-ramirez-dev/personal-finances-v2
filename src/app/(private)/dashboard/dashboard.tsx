@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import type { ExpenseTarget } from '@/lib/finance/types'
@@ -56,6 +57,7 @@ export function Dashboard({ userName }: { userName: string }) {
           >
             Ingreso
           </button>
+          <Link href="/settings">Ajustes</Link>
           <form
             action={async () => {
               await clearDataKey()

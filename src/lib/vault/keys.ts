@@ -84,9 +84,11 @@ export async function wrapDataKey(
 }
 
 // Lanza si la masterKey no es la correcta (AES-GCM no autentica).
+// extractable solo para re-envolverla (cambio de contraseña, códigos nuevos).
 export function unwrapDataKey(
   wrapped: WrappedKey,
   masterKey: CryptoKey,
+  extractable = false,
 ): Promise<CryptoKey> {
   return crypto.subtle.unwrapKey(
     'raw',
@@ -94,7 +96,7 @@ export function unwrapDataKey(
     masterKey,
     { name: 'AES-GCM', iv: fromBase64(wrapped.iv) },
     AES,
-    false,
+    extractable,
     ['encrypt', 'decrypt'],
   )
 }

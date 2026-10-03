@@ -9,6 +9,7 @@ import { login } from '@/lib/api-client/auth'
 import { errorMessage } from '@/lib/api-client/http'
 import { clearDataKey } from '@/lib/vault/key-store'
 import { deriveKeys } from '@/lib/vault/keys'
+import { CodesStep } from '../codes-step'
 import { unlockVault } from '../unlock-vault'
 import styles from './login.module.css'
 
@@ -16,6 +17,7 @@ export function LoginForm() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [codes, setCodes] = useState<string[] | null>(null)
 
   // Toda salida (logout, sesión vencida) termina aquí: la llave vieja no debe quedar.
   useEffect(() => {
@@ -38,13 +40,19 @@ export function LoginForm() {
         setError(errorMessage(failure))
         return
       }
-      const failed = await unlockVault(session, masterKey)
-      if (failed) {
-        setError(failed)
+      const unlocked = await unlockVault(session, masterKey)
+      if (!unlocked.ok) {
+        setError(unlocked.error)
         return
       }
-      router.replace('/')
+      // Primer login tras confirmar el email: aquí nace la llave y sus códigos.
+      if (unlocked.recoveryCodes) setCodes(unlocked.recoveryCodes)
+      else router.replace('/')
     })
+  }
+
+  if (codes) {
+    return <CodesStep codes={codes} onDone={() => router.replace('/')} />
   }
 
   return (
@@ -84,6 +92,8 @@ export function LoginForm() {
 
       <p className={styles.switch}>
         ¿No tienes cuenta? <Link href="/register">Crear cuenta</Link>
+        <br />
+        <Link href="/forgot">¿Olvidaste tu contraseña?</Link>
         <br />
         <Link href="/privacy">Privacidad</Link>
       </p>

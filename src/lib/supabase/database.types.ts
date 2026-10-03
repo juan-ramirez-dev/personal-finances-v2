@@ -214,6 +214,36 @@ export type Database = {
         }
         Relationships: []
       }
+      recovery_codes: {
+        Row: {
+          auth_hash: string
+          code: string
+          created_at: string
+          id: string
+          iv: string
+          user_id: string
+          wrapped_key: string
+        }
+        Insert: {
+          auth_hash: string
+          code: string
+          created_at?: string
+          id: string
+          iv: string
+          user_id?: string
+          wrapped_key: string
+        }
+        Update: {
+          auth_hash?: string
+          code?: string
+          created_at?: string
+          id?: string
+          iv?: string
+          user_id?: string
+          wrapped_key?: string
+        }
+        Relationships: []
+      }
       user_keys: {
         Row: {
           created_at: string
