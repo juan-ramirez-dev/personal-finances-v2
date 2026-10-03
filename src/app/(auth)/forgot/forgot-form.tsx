@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import field from '@/components/ui/field.module.css'
@@ -12,7 +11,6 @@ import styles from '../auth-form.module.css'
 import { recoverAccount } from './recover-account'
 
 export function ForgotForm() {
-  const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [newCode, setNewCode] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -49,7 +47,7 @@ export function ForgotForm() {
   }
 
   if (newCode) {
-    return <CodesStep codes={[newCode]} onDone={() => router.replace('/')} />
+    return <CodesStep codes={[newCode]} />
   }
 
   return (
