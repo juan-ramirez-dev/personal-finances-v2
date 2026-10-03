@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { syncInvestmentFixed, unassigned } from '@/lib/finance/calc'
 import { formatMoney } from '@/lib/finance/format'
 import type {
@@ -111,9 +112,11 @@ export function Onboarding({ userName }: { userName: string }) {
       </aside>
 
       <section className={styles.content}>
-        <div className={styles.progress}>
-          <span style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
-        </div>
+        <Progress
+          className={styles.progress}
+          value={(step + 1) / STEPS.length}
+          tone="primary"
+        />
 
         <form
           key={step}
@@ -155,7 +158,7 @@ export function Onboarding({ userName }: { userName: string }) {
           <footer className={styles.footer}>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               disabled={step === 0}
               onClick={() => setStep(step - 1)}
             >

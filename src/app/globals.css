@@ -1,25 +1,28 @@
 /*
  * Tokens de diseño. Único lugar donde se escriben colores literales.
  * Todo lo demás usa var(--token). Ver docs/css.md.
- * Estética editorial: blanco, negro y rojo oscuro. Solo modo claro en v1.
+ * Estética editorial: crema, tinta, burdeos, pátina y ocre. Solo modo claro en v1.
  */
 :root {
   color-scheme: light;
 
-  /* Colores */
-  --color-bg: #ffffff;
-  --color-surface: #f7f5f2;
-  --color-border: #e6e1dc;
-  --color-track: #ece8e3;
-  --color-text: #0e0d0d;
-  --color-text-muted: #77706b;
-  --color-text-inverse: #ffffff;
-  --color-ink: #0e0d0d;
-  --color-primary: #6e0b14;
-  --color-primary-hover: #520810;
-  --color-primary-soft: #f4e7e8;
-  --color-danger: #a3111e;
-  --color-overlay: rgb(14 13 13 / 0.55);
+  /* Colores: tomados de una esfera con pátina. */
+  --color-bg: #f3eee5;
+  --color-surface: #e9e2d5;
+  --color-field: #fbf8f3;
+  --color-border: #d8d0c1;
+  --color-track: #ddd5c7;
+  --color-text: #15181d;
+  --color-text-muted: #6a6358;
+  --color-text-inverse: #f3eee5;
+  --color-ink: #15181d;
+  --color-primary: #7a1838;
+  --color-primary-hover: #5a1029;
+  --color-primary-soft: #f1e3e6;
+  --color-positive: #4e705f;
+  --color-warning: #a2591f;
+  --color-danger: #9b1c2c;
+  --color-overlay: rgb(21 24 29 / 0.5);
 
   /* Espacios */
   --space-1: 0.25rem;
@@ -34,9 +37,9 @@
   --space-16: 4rem;
 
   /* Tipografía */
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-geist), system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-bodoni), 'Bodoni 72', Didot, serif;
-  --text-2xs: 0.625rem;
+  --text-2xs: 0.6875rem;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;
@@ -45,19 +48,27 @@
   --text-2xl: 2.5rem;
   --text-3xl: 3.5rem;
   --text-display: clamp(2.75rem, 5vw, 4.75rem);
-  --tracking-wide: 0.2em;
+  --tracking-wide: 0.22em;
+  --tracking-brand: 0.06em;
   --tracking-tight: -0.02em;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
 
   /* Bordes */
-  --radius-sm: 0;
-  --radius-md: 0;
+  --radius-sm: 2px;
+  --radius-md: 2px;
   --radius-full: 999px;
   --line: 1px solid var(--color-ink);
   --line-soft: 1px solid var(--color-border);
 
-  /* Movimiento */
+  /* Movimiento: solo opacidad, posición corta y trazos. Nada rebota. */
   --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
-  --duration: 240ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 200ms;
+  --duration: 320ms;
+  --duration-slow: 640ms;
+  --stagger: 60ms;
 }
 
 *,
@@ -78,6 +89,7 @@ body {
   font-family: var(--font-sans);
   font-size: var(--text-md);
   line-height: 1.5;
+  font-variant-numeric: lining-nums tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -98,11 +110,23 @@ select {
   outline-offset: 2px;
 }
 
+/* Cambio de ruta (<ViewTransition>): fundido corto, sin desplazar. */
+::view-transition-group(*) {
+  animation-duration: var(--duration);
+  animation-timing-function: var(--ease-out);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

@@ -4,8 +4,9 @@
   margin: 0;
   padding: var(--space-4);
   list-style: none;
-  background: var(--color-surface);
+  background: var(--color-field);
   border: var(--line-soft);
+  border-radius: var(--radius-sm);
 }
 
 .codes li {

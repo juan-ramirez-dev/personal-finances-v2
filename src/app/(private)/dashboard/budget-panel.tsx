@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import type { Summary } from '@/lib/finance/calc'
 import { formatMoney } from '@/lib/finance/format'
 import styles from './panel.module.css'
@@ -57,7 +58,6 @@ export function BudgetPanel({
                 type="button"
                 className={styles.budgetRow}
                 data-over={(over > 0 && !noBudget) || undefined}
-                data-warn={(ratio >= 0.8 && ratio <= 1) || undefined}
                 onClick={() => onAdd(category.id)}
                 title={`Registrar gasto en ${category.name}`}
               >
@@ -75,13 +75,17 @@ export function BudgetPanel({
                   {formatMoney(spent)}
                   <small>/ {formatMoney(category.budget)}</small>
                 </span>
-                <span className={styles.bar}>
-                  <span
-                    style={{
-                      width: `${Math.min(noBudget ? 0 : ratio, 1) * 100}%`,
-                    }}
-                  />
-                </span>
+                <Progress
+                  className={styles.bar}
+                  value={noBudget ? 0 : ratio}
+                  tone={
+                    over > 0 && !noBudget
+                      ? 'warning'
+                      : ratio >= 0.8
+                        ? 'muted'
+                        : 'ink'
+                  }
+                />
               </button>
             </li>
           )

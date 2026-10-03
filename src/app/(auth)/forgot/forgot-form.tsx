@@ -8,7 +8,7 @@ import field from '@/components/ui/field.module.css'
 import { checkNewPassword, MIN_PASSWORD_LENGTH } from '@/lib/auth/new-password'
 import { clearDataKey } from '@/lib/vault/key-store'
 import { CodesStep } from '../codes-step'
-import styles from '../login/login.module.css'
+import styles from '../auth-form.module.css'
 import { recoverAccount } from './recover-account'
 
 export function ForgotForm() {

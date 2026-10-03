@@ -1,4 +1,4 @@
-# Finanzas personales
+# Lucka
 
 Cuánto tengo disponible y en qué se me va el dinero.
 Basado en `next-supabase-template`.

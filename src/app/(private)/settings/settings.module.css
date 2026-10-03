@@ -10,7 +10,7 @@
 .eyebrow {
   margin: 0 0 var(--space-2);
   font-size: var(--text-2xs);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-primary);
@@ -20,7 +20,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--text-2xl);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   line-height: 1;
 }
 
@@ -36,7 +36,7 @@
   margin: 0;
   font-family: var(--font-serif);
   font-size: var(--text-xl);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
 }
 
 .hint {

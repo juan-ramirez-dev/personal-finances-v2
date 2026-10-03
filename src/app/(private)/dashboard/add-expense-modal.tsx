@@ -196,7 +196,7 @@ function AddExpenseForm({ initialTarget, onClose }: AddExpenseModalProps) {
       {error && <p className={styles.error}>{error}</p>}
 
       <footer className={styles.footer}>
-        <Button type="button" variant="ghost" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose}>
           Cancelar
         </Button>
         <Button type="submit" disabled={!valid || saving}>

@@ -3,7 +3,7 @@ import { requireUser } from '@/lib/auth/guards'
 import { SessionTimer } from '../session-timer'
 import { Settings } from './settings'
 
-export const metadata: Metadata = { title: 'Ajustes · Finanzas' }
+export const metadata: Metadata = { title: 'Ajustes · Lucka' }
 
 export default async function SettingsPage() {
   const user = await requireUser()

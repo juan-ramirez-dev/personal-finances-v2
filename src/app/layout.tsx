@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Bodoni_Moda, Inter } from 'next/font/google'
+import { Bodoni_Moda, Geist } from 'next/font/google'
 import './globals.css'
 
 const bodoni = Bodoni_Moda({
@@ -8,21 +8,21 @@ const bodoni = Bodoni_Moda({
   variable: '--font-bodoni',
 })
 
-const inter = Inter({
+const geist = Geist({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-geist',
 })
 
 export const metadata: Metadata = {
-  title: 'Finanzas',
-  description: 'Cuánto tengo disponible y en qué se me va el dinero.',
+  title: 'Lucka',
+  description: 'Tu dinero, en orden y solo para tus ojos.',
 }
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${bodoni.variable} ${inter.variable}`}>
+    <html lang="es" className={`${bodoni.variable} ${geist.variable}`}>
       <body>{children}</body>
     </html>
   )

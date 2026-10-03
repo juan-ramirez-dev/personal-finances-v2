@@ -20,10 +20,10 @@
 .spent,
 .committed {
   fill: none;
-  stroke-width: 7;
+  stroke-width: 4;
   transition:
-    stroke-dasharray 700ms var(--ease),
-    stroke-dashoffset 700ms var(--ease);
+    stroke-dasharray var(--duration-slow) var(--ease-out),
+    stroke-dashoffset var(--duration-slow) var(--ease-out);
 }
 
 .track {
@@ -32,12 +32,13 @@
 
 .spent {
   stroke: var(--color-primary);
-  animation: draw 1400ms var(--ease) both;
+  animation: draw calc(var(--duration-slow) * 1.5) var(--ease-out) both;
 }
 
 .committed {
   stroke: var(--color-ink);
-  animation: draw 1400ms 200ms var(--ease) both;
+  animation: draw calc(var(--duration-slow) * 1.5) calc(var(--stagger) * 3)
+    var(--ease-out) both;
 }
 
 .center {
@@ -54,7 +55,7 @@
 .label {
   margin: 0;
   font-size: var(--text-2xs);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-primary);
@@ -67,7 +68,8 @@
   font-size: clamp(1.5rem, 11cqi, 3.75rem);
   line-height: 1;
   letter-spacing: var(--tracking-tight);
-  animation: enter 900ms var(--ease) both;
+  animation: enter var(--duration-slow) calc(var(--stagger) * 2) var(--ease-out)
+    both;
 }
 
 .amount[data-negative] {
@@ -91,6 +93,6 @@
 @keyframes enter {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
 }

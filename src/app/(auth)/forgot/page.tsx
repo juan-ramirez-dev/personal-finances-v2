@@ -1,23 +1,5 @@
-import styles from '../login/login.module.css'
 import { ForgotForm } from './forgot-form'
 
-export default function RegisterPage() {
-  return (
-    <main className={styles.page}>
-      <section className={styles.cover}>
-        <p className={styles.issue}>Nº 01 · Finanzas personales</p>
-        <h1 className={styles.brand}>
-          <em>Finanzas</em>
-        </h1>
-        <p className={styles.tagline}>
-          Cuánto tienes.
-          <br />
-          En qué se va.
-        </p>
-      </section>
-      <section className={styles.panel}>
-        <ForgotForm />
-      </section>
-    </main>
-  )
+export default function ForgotPage() {
+  return <ForgotForm />
 }

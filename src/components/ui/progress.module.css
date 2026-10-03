@@ -1,0 +1,43 @@
+.track {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  background: var(--color-track);
+}
+
+.thin {
+  height: 1px;
+}
+
+/* Entra creciendo desde la izquierda; luego sigue el valor con transición. */
+.fill {
+  display: block;
+  height: 100%;
+  transform-origin: left center;
+  animation: grow var(--duration-slow) var(--ease-out) both;
+  transition:
+    width var(--duration-slow) var(--ease-out),
+    background var(--duration-fast) var(--ease);
+}
+
+.ink {
+  background: var(--color-ink);
+}
+
+.primary {
+  background: var(--color-primary);
+}
+
+.warning {
+  background: var(--color-warning);
+}
+
+.muted {
+  background: var(--color-text-muted);
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}

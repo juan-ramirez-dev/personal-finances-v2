@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Stat } from '@/components/ui/stat'
+import { Wordmark } from '@/components/ui/wordmark'
 import type { ExpenseTarget } from '@/lib/finance/types'
 import { formatMoney, formatShortDate } from '@/lib/finance/format'
 import { logout } from '@/lib/api-client/auth'
@@ -38,9 +40,7 @@ export function Dashboard({ userName }: { userName: string }) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <p className={styles.brand}>
-          <em>Finanzas</em>
-        </p>
+        <Wordmark size="sm" />
         <p className={styles.cycle}>
           {formatShortDate(cycle.start)} — {formatShortDate(lastDay)}
           <span>
@@ -85,24 +85,31 @@ export function Dashboard({ userName }: { userName: string }) {
             available={summary.available}
           />
           <dl className={styles.stats}>
-            <div>
-              <dt>
-                <i className={styles.dotSpent} /> Gastado
-              </dt>
-              <dd>{formatMoney(summary.spent)}</dd>
-            </div>
-            <div>
-              <dt>
-                <i className={styles.dotCommitted} /> Comprometido
-              </dt>
-              <dd>{formatMoney(summary.committed)}</dd>
-            </div>
-            <div>
-              <dt>
-                <i className={styles.dotFree} /> Libre
-              </dt>
-              <dd>{formatMoney(free)}</dd>
-            </div>
+            <Stat
+              label={
+                <>
+                  <i className={styles.dotSpent} /> Gastado
+                </>
+              }
+              value={formatMoney(summary.spent)}
+            />
+            <Stat
+              label={
+                <>
+                  <i className={styles.dotCommitted} /> Comprometido
+                </>
+              }
+              value={formatMoney(summary.committed)}
+            />
+            <Stat
+              label={
+                <>
+                  <i className={styles.dotFree} /> Libre
+                </>
+              }
+              value={formatMoney(free)}
+              tone={free > 0 ? 'positive' : 'default'}
+            />
           </dl>
           <div className={styles.actions}>
             <Button type="button" onClick={() => setOpen({ kind: 'add' })}>
@@ -110,7 +117,7 @@ export function Dashboard({ userName }: { userName: string }) {
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => setOpen({ kind: 'income' })}
             >
               + Registrar ingreso

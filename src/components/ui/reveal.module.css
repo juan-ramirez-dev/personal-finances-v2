@@ -1,0 +1,30 @@
+/*
+ * Entrada sobria: aparece y sube 8px.
+ * Escalonar con style={stagger(n)} (ver reveal.ts).
+ */
+.reveal {
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+/* Línea fina que se dibuja de izquierda a derecha. */
+.rule {
+  border: none;
+  border-top: var(--line);
+  margin: 0;
+  transform-origin: left center;
+  animation: draw var(--duration-slow) var(--ease-out) both;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes draw {
+  from {
+    transform: scaleX(0);
+  }
+}
